@@ -75,62 +75,28 @@ function SignUpForm() {
         return
       }
 
-      // Upsert applicant profile (handles re-attempts gracefully)
-      const { error: profileError } = await supabase.from('applicants').upsert({
-        id: authData.user.id,
-        email: data.email,
-        phone_number: data.phone_number,
-        prenom: data.prenom,
-        nom: data.nom,
-        date_naissance: data.date_naissance,
-        password_hash: '',
-      }, { onConflict: 'id' })
-
-      if (profileError) {
-        setServerError(`Erreur lors de la création du profil: ${profileError.message}`)
-        return
-      }
-
-      // Check if applicant already has an application (re-attempt recovery)
-      const currentYear = new Date().getFullYear()
-      const { data: existingApp } = await supabase
-        .from('applications')
-        .select('applicant_id')
-        .eq('user_id', authData.user.id)
-        .single()
-
-      if (existingApp?.applicant_id) {
-        router.push(`/apply/academic-history?applicant_id=${existingApp.applicant_id}`)
-        return
-      }
-
-      // Generate Applicant_ID
-      const { data: applicantIdData, error: idError } = await supabase
-        .rpc('generate_applicant_id', { p_intake_year: currentYear })
-
-      if (idError || !applicantIdData) {
-        setServerError(`Erreur lors de la génération de l'identifiant: ${idError?.message}`)
-        return
-      }
-
-      // Create application record
-      const { error: applicationError } = await supabase.from('applications').insert({
-        applicant_id: applicantIdData as string,
-        user_id: authData.user.id,
-        intake_year: currentYear,
-        ecole_provenance: '',
-        option_academique: '',
-        exam_status: 'En attente des résultats',
-        application_status: 'Dossier Créé',
-        payment_status: 'Pending',
+      // Complete signup via server-side API (uses service role — works before email confirmation)
+      const res = await fetch('/api/auth/complete-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: authData.user.id,
+          email: data.email,
+          prenom: data.prenom,
+          nom: data.nom,
+          phone_number: data.phone_number,
+          date_naissance: data.date_naissance,
+        }),
       })
 
-      if (applicationError) {
-        setServerError(`Erreur lors de la création du dossier: ${applicationError.message}`)
+      const result = await res.json()
+
+      if (!res.ok || !result.applicant_id) {
+        setServerError(result.error ?? 'Erreur lors de la création du dossier.')
         return
       }
 
-      router.push(`/apply/academic-history?applicant_id=${applicantIdData}`)
+      router.push(`/apply/academic-history?applicant_id=${result.applicant_id}`)
   }
 
   return (

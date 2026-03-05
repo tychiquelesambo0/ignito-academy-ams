@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
+import dynamicImport from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { ApplicationStatusTracker } from '@/components/ApplicationStatusTracker'
 import { DocumentUpload } from '@/components/DocumentUpload'
@@ -16,7 +16,7 @@ import { useRef } from 'react'
 import type { DecisionStatus } from '@/components/pdf/DecisionLetterPDF'
 
 // Lazy-load the PDF button to avoid SSR — @react-pdf/renderer is client-only
-const PDFDownloadButton = dynamic(
+const PDFDownloadButton = dynamicImport(
   () => import('@/components/pdf/PDFDownloadButton').then(m => m.PDFDownloadButton),
   { ssr: false, loading: () => (
     <span className="inline-flex items-center gap-2 px-5 min-h-[48px] rounded-md text-sm font-semibold bg-slate-100 text-slate-400 cursor-wait">

@@ -582,6 +582,12 @@ This document outlines the implementation tasks for the Ignito Academy AMS, a fu
   - Verify all secrets are properly secured
   - _Requirements: All deployment requirements_
 
+- [x] 48. Configure production environment variables
+  - ✅ All env vars set in Vercel
+  - ✅ Admin account seeded in production DB
+  - ✅ Resend domain verified
+  - ✅ Deployed at ignitoacademy.com
+
 - [ ] 49. Deploy Edge Functions to Supabase
   - Deploy payment-webhook function: `supabase functions deploy payment-webhook`
   - Deploy admin-decision function: `supabase functions deploy admin-decision`

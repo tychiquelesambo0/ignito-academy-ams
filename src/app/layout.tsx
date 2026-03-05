@@ -14,12 +14,10 @@ const crimsonPro = Crimson_Pro({
 })
 
 export const metadata: Metadata = {
-  title: "Ignito Academy — Licence Britannique depuis la RDC",
-  description: "Le cursus complet en 4 ans, 100% à distance. Débutez dès l'obtention de votre Diplôme d'État et décrochez votre Licence Britannique accréditée sans frais de voyage ni visa.",
+  title: "Ignito Academy | Obtenez une Licence Britannique depuis la RDC",
+  description: "Le cursus complet en 4 ans, 100% à distance. Débutez dès l'obtention de votre Diplôme d'État et décrochez votre Licence Britannique sans frais de voyage ni visa.",
   icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },

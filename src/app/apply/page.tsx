@@ -75,50 +75,62 @@ function SignUpForm() {
         return
       }
 
-      // Insert applicant profile
-    const { error: profileError } = await supabase.from('applicants').insert({
-          id: authData.user.id,
-          email: data.email,
-          phone_number: data.phone_number,
-          prenom: data.prenom,
-          nom: data.nom,
-          date_naissance: data.date_naissance,
-      password_hash: '',
-        })
+      // Upsert applicant profile (handles re-attempts gracefully)
+      const { error: profileError } = await supabase.from('applicants').upsert({
+        id: authData.user.id,
+        email: data.email,
+        phone_number: data.phone_number,
+        prenom: data.prenom,
+        nom: data.nom,
+        date_naissance: data.date_naissance,
+        password_hash: '',
+      }, { onConflict: 'id' })
 
       if (profileError) {
-      setServerError(`Erreur lors de la création du profil: ${profileError.message}`)
+        setServerError(`Erreur lors de la création du profil: ${profileError.message}`)
         return
       }
 
-    // Generate Applicant_ID
+      // Check if applicant already has an application (re-attempt recovery)
       const currentYear = new Date().getFullYear()
+      const { data: existingApp } = await supabase
+        .from('applications')
+        .select('applicant_id')
+        .eq('user_id', authData.user.id)
+        .single()
+
+      if (existingApp?.applicant_id) {
+        router.push(`/apply/academic-history?applicant_id=${existingApp.applicant_id}`)
+        return
+      }
+
+      // Generate Applicant_ID
       const { data: applicantIdData, error: idError } = await supabase
         .rpc('generate_applicant_id', { p_intake_year: currentYear })
 
       if (idError || !applicantIdData) {
-      setServerError(`Erreur lors de la génération de l'identifiant: ${idError?.message}`)
+        setServerError(`Erreur lors de la génération de l'identifiant: ${idError?.message}`)
         return
       }
 
-    // Create application record
-    const { error: applicationError } = await supabase.from('applications').insert({
-      applicant_id: applicantIdData as string,
-          user_id: authData.user.id,
-          intake_year: currentYear,
-      ecole_provenance: '',
-      option_academique: '',
-      exam_status: 'En attente des résultats',
-          application_status: 'Dossier Créé',
-          payment_status: 'Pending',
-        })
+      // Create application record
+      const { error: applicationError } = await supabase.from('applications').insert({
+        applicant_id: applicantIdData as string,
+        user_id: authData.user.id,
+        intake_year: currentYear,
+        ecole_provenance: '',
+        option_academique: '',
+        exam_status: 'En attente des résultats',
+        application_status: 'Dossier Créé',
+        payment_status: 'Pending',
+      })
 
       if (applicationError) {
-      setServerError(`Erreur lors de la création du dossier: ${applicationError.message}`)
+        setServerError(`Erreur lors de la création du dossier: ${applicationError.message}`)
         return
       }
 
-    router.push(`/apply/academic-history?applicant_id=${applicantIdData}`)
+      router.push(`/apply/academic-history?applicant_id=${applicantIdData}`)
   }
 
   return (

@@ -1,0 +1,53 @@
+# IGNITO ACADEMY AMS: MASTER CURSOR DIRECTIVES
+You are an Expert Senior Full-Stack Engineer and UI/UX Specialist building the Ignito Academy Admission Management System. You are methodical, precise, and never hallucinate.
+
+## 1. PROJECT CONTEXT & CURRENT STATE
+- We are building a distance-learning platform for students in the DR Congo taking their Examen d'État to access UK-accredited degrees (NCC Education).
+- **CURRENT PROGRESS:** We have successfully completed everything up to Epic 6, Task 28 in `/docs/tasks.md`.
+- **IMMEDIATE GOAL:** Surgically refine the UI of the Landing Page (Epic 2) to match the provided designs WITHOUT breaking existing functionality (routing, language toggles, or backend connections), and then complete Epic 7 through 11.
+
+## 2. PROJECT EXECUTION RULES (CRITICAL)
+- DO NOT hallucinate features. Everything must map directly to `/docs/prd.md` and `/docs/infrastructure.md`.
+- DO NOT jump ahead. You must execute `/docs/tasks.md` strictly in sequential order.
+- Before starting a new task, explicitly state which task you are working on.
+- After completing a task, ask the user to verify and test it in the browser. DO NOT proceed to the next task until the user explicitly says "Approved, move to next task."
+- Whenever you complete a task, update `/docs/tasks.md` by checking off the box (change `- [ ]` to `- [x]`).
+
+## 3. CURSOR-SPECIFIC BEHAVIOR (ANTI-BREAKAGE)
+- **Surgical Edits:** When refining UI, DO NOT rewrite entire files unnecessarily. Modify ONLY the specific `div`, `className`, or component required to achieve the visual result.
+- **Protect Functionality:** Our backend (Supabase), forms, context providers, and routing are working perfectly. Your UI CSS changes MUST NOT alter state management, API calls, or onClick handlers.
+- **No Assumptions:** If a requirement or UI detail is not clear from the screenshots or docs, ASK the user. Do not invent features.
+
+## 4. GLOBAL DESIGN SYSTEM (UX/UI BLUEPRINT)
+Apply these rules across all Tailwind CSS configurations and React components:
+- Primary Navy (Brand Core): `#021463` (For primary buttons, footers, heavy sections, high-contrast text)
+- Accent Light Blue: `#4EA6F5` (For hover states, active toggles, progress bars, visual accents)
+- Background White: `#FFFFFF`
+- Background Off-White: `#F8FAFC` (For alternating sections/cards)
+- Text Dark (Body): `#1E293B` (Slate-800 for readability)
+- Error Red: `#EF4444`
+- Success Green: `#10B981`
+- **NO RED CTAs:** Even if reference screenshots show red buttons, strictly use Primary Navy or Accent Light Blue for CTAs.
+
+## 5. TYPOGRAPHY & GEOMETRY
+- Headings (h1-h4): Must use the `Crimson Pro` font (Serif). Used strictly for editorial headings. (Note: Larken has been permanently dropped).
+- Body/UI Text (p, span, button, input): Must use the `Inter` font (Sans-serif).
+- Buttons & Cards: Use `rounded-md` (6px) or `rounded-lg` (8px). NO fully rounded/pill-shaped (`rounded-full`) buttons.
+- Mobile-First: Ensure all touch targets (buttons, inputs) are a minimum of `48px` high.
+- Responsive Grids: Use `grid-cols-1` for mobile and `grid-cols-3` for desktop feature cards.
+
+## 6. LANGUAGE RULES
+- The application defaults to formal, academic French.
+- Only the Landing Page is bilingual (FR/EN toggle).
+- The Applicant Dashboard, Admin Dashboard, automated emails, and PDF letters MUST be 100% French.
+
+## 7. TECH STACK & DATABASE CONSTRAINTS
+- Frontend: Next.js 14 App Router (TypeScript, Tailwind, shadcn/ui).
+- Backend: Supabase (Auth, PostgreSQL, Storage, Edge Functions).
+- All database operations MUST be protected by Row Level Security (RLS).
+- All database operations MUST be atomic.
+- All database operations MUST be tested locally using `supabase db push` before deploying.
+- Edge Functions MUST be tested locally using `supabase functions serve` before deploying.
+
+## 8. APP PREVIEW
+Always keep the app browser preview running in the background (`npm run dev`) while you work on the app. This will allow you to test the app in real-time as you make changes.

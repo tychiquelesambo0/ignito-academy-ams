@@ -14,8 +14,15 @@ const crimsonPro = Crimson_Pro({
 })
 
 export const metadata: Metadata = {
-  title: "Ignito Academy - Admission Management System",
-  description: "Distance learning institution for Grade 12 students in DR Congo",
+  title: "Ignito Academy — Licence Britannique depuis la RDC",
+  description: "Le cursus complet en 4 ans, 100% à distance. Débutez dès l'obtention de votre Diplôme d'État et décrochez votre Licence Britannique accréditée sans frais de voyage ni visa.",
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

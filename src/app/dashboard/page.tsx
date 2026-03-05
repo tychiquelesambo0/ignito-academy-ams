@@ -51,7 +51,8 @@ export default function DashboardPage() {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      router.push('/login')
+      await supabase.auth.signOut()
+      router.push('/apply')
       return
     }
 
@@ -84,12 +85,18 @@ export default function DashboardPage() {
 
     setApplicationsWithDocs(appsWithDocs)
 
-    // Get applicant profile
-    const { data: applicantData } = await supabase
+    // Get applicant profile — if missing, the account was deleted; sign out
+    const { data: applicantData, error: profileError } = await supabase
       .from('applicants')
       .select('prenom, nom, email')
       .eq('id', user.id)
       .single()
+
+    if (profileError || !applicantData) {
+      await supabase.auth.signOut()
+      router.push('/apply')
+      return
+    }
 
     setApplicant(applicantData)
     setLoading(false)

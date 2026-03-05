@@ -34,11 +34,34 @@ export async function middleware(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser()
 
+  // If the auth token is invalid (user deleted from auth.users), sign out and redirect
+  if (authError && authError.message !== 'Auth session missing!') {
+    await supabase.auth.signOut()
+    const redirectUrl = request.nextUrl.pathname.startsWith('/admin')
+      ? '/admin/login'
+      : '/apply'
+    return NextResponse.redirect(new URL(redirectUrl, request.url))
+  }
+
   // Protected routes for applicants (dashboard)
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
-    return NextResponse.redirect(new URL('/apply', request.url))
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/apply', request.url))
+    }
+    // Check the applicant still exists in the applicants table
+    const { data: applicant } = await supabase
+      .from('applicants')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!applicant) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/apply', request.url))
+    }
   }
 
   // Protected routes for admissions officers (admin)

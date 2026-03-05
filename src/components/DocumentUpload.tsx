@@ -21,6 +21,7 @@ interface DocumentUploadProps {
   uploadedDocuments?: UploadedDocument[]
   onUploadSuccess?: () => void
   applicationStatus?: string
+  examStatus?: string
 }
 
 const ACCEPTED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
@@ -271,11 +272,14 @@ function ConditionalDocRow({ doc, onSuccess, locked }: CondDocRowProps) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments = [], onUploadSuccess, applicationStatus }: DocumentUploadProps) {
+export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments = [], onUploadSuccess, applicationStatus, examStatus }: DocumentUploadProps) {
   // Lock once payment is confirmed — but unlock again if admin set status to Admission sous réserve
   const isConditional = applicationStatus === 'Admission sous réserve'
   const locked = (paymentStatus === 'paid' || paymentStatus === 'Confirmed') && !isConditional
   const byType = (type: DocumentType) => uploadedDocuments.find(d => d.document_type === type)
+
+  // Diploma is optional when applicant is still awaiting exam results
+  const diplomaOptional = examStatus === 'En attente des résultats'
 
   // All documents submitted during conditional-admission rounds
   const conditionalDocs = uploadedDocuments.filter(d => d.document_type === 'document_conditionnel')
@@ -311,13 +315,26 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
         <DocumentSlot {...slotProps('identification')} title="Preuve d'Identité" description="" compact />
       </div>
 
-      {/* Card 2 – Diploma */}
-      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-5 ${locked ? 'opacity-80' : ''}`}>
-        <div className="flex items-center gap-2 mb-1">
+      {/* Card 2 – Diploma (conditionally optional) */}
+      <div className={`bg-white rounded-xl shadow-sm border p-5 ${locked ? 'opacity-80' : ''} ${diplomaOptional ? 'border-slate-200' : 'border-slate-200'}`}>
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
           <FileText className="w-4 h-4 text-[#4EA6F5]" />
           <h4 className="text-sm font-bold text-[#021463]">Diplôme d&apos;État ou Attestation</h4>
+          {diplomaOptional ? (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+              Optionnel pour le moment
+            </span>
+          ) : (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100">
+              Requis *
+            </span>
+          )}
         </div>
-        <p className="text-xs text-slate-400 mb-4">Copie officielle de votre diplôme ou attestation de réussite.</p>
+        <p className="text-xs text-slate-400 mb-4">
+          {diplomaOptional
+            ? "Puisque vous êtes en attente de vos résultats, vous pouvez soumettre votre dossier sans ce document. Il vous sera demandé ultérieurement pour votre admission définitive."
+            : "Copie officielle de votre diplôme ou attestation de réussite."}
+        </p>
         <DocumentSlot {...slotProps('diploma')} title="Diplôme d'État ou Attestation" description="" compact />
       </div>
 

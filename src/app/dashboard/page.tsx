@@ -180,7 +180,15 @@ export default function DashboardPage() {
     }
   }
 
-  const REQUIRED_DOC_TYPES = ['identification', 'diploma', 'bulletin_10', 'bulletin_11', 'bulletin_12']
+  // Diploma is only required if the applicant has already obtained their diploma
+  const diplomaRequired = application?.exam_status === 'Diplôme obtenu'
+  const REQUIRED_DOC_TYPES = [
+    'identification',
+    'bulletin_10',
+    'bulletin_11',
+    'bulletin_12',
+    ...(diplomaRequired ? ['diploma'] : []),
+  ]
 
   // Check if user has completed applications from previous years
   const currentYear = new Date().getFullYear()
@@ -505,6 +513,7 @@ export default function DashboardPage() {
                     uploadedDocuments={application.uploadedDocuments}
                     onUploadSuccess={fetchData}
                     applicationStatus={application.application_status}
+                    examStatus={application.exam_status}
                   />
                 </div>
 

@@ -96,7 +96,7 @@ function SignUpForm() {
         return
       }
 
-      router.push(`/apply/academic-history?applicant_id=${result.applicant_id}`)
+      router.push(`/apply/confirm-email?email=${encodeURIComponent(data.email)}`)
   }
 
   return (
@@ -262,7 +262,11 @@ function LoginForm() {
     })
 
     if (authError || !authData.user) {
-      setServerError('Email ou mot de passe incorrect. Veuillez réessayer.')
+      if (authError?.message?.toLowerCase().includes('email not confirmed')) {
+        setServerError('Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez votre boîte de réception.')
+      } else {
+        setServerError('Email ou mot de passe incorrect. Veuillez réessayer.')
+      }
       return
     }
 

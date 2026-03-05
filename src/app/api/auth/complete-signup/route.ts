@@ -20,7 +20,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userId et email sont requis.' }, { status: 400 })
     }
 
-    // 1. Upsert profile (service role bypasses RLS)
+    // 1. Upsert profile — handle both id and email conflicts
+    // If an orphaned record exists with the same email but different id, remove it first
+    const { data: existingByEmail } = await admin
+      .from('applicants')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    if (existingByEmail && existingByEmail.id !== userId) {
+      // Orphaned record from a previous failed attempt — clean it up
+      await admin.from('applications').delete().eq('user_id', existingByEmail.id)
+      await admin.from('applicants').delete().eq('id', existingByEmail.id)
+    }
+
     const { error: profileError } = await admin.from('applicants').upsert({
       id: userId,
       email,

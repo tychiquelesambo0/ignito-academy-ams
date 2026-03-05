@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
-
 export async function POST(req: NextRequest) {
   try {
+    // Initialise inside the handler so env vars are always read at request time
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceKey) {
+      console.error('[complete-signup] missing env vars', { supabaseUrl: !!supabaseUrl, serviceKey: !!serviceKey })
+      return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 })
+    }
+
+    const admin = createClient(supabaseUrl, serviceKey)
+
     const { userId, email, prenom, nom, phone_number, date_naissance } = await req.json()
 
     if (!userId || !email) {

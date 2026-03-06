@@ -295,6 +295,17 @@ export default function ApplicationDetailPage() {
         .eq('applicant_id', application.applicant_id)
     }
 
+    // Fire status-change email (fire-and-forget — don't block the UI)
+    fetch('/api/send-status-email', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        applicant_id:        application.applicant_id,
+        new_status:          selectedStatus,
+        conditional_message: selectedStatus === 'Admission sous réserve' ? condMessage.trim() : undefined,
+      }),
+    }).catch(err => console.error('[send-status-email]', err))
+
     // Success — refresh data to get new version number
     setUpdateSuccess(true)
     await fetchData()
@@ -348,10 +359,22 @@ export default function ApplicationDetailPage() {
       return
     }
 
+    // For rejected decisions the Edge Function doesn't send an email — send it here.
+    if (decisionType === 'rejected' && application) {
+      fetch('/api/send-status-email', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          applicant_id: application.applicant_id,
+          new_status:   'Dossier refusé',
+        }),
+      }).catch(err => console.error('[send-status-email rejected]', err))
+    }
+
     const labels: Record<string, string> = {
-      conditional: "Admission sous réserve accordée.",
+      conditional: "Admission sous réserve accordée. L'email de notification a été envoyé.",
       final:       "Admission définitive accordée. L'email de félicitations a été envoyé.",
-      rejected:    "Dossier refusé. La décision a été enregistrée.",
+      rejected:    "Dossier refusé. L'email de notification a été envoyé au candidat.",
     }
     setDecisionSuccess(labels[decisionType])
     await fetchData()

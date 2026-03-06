@@ -374,16 +374,20 @@ export default function ApplicationDetailPage() {
       return
     }
 
-    // For rejected decisions the Edge Function doesn't send an email — send it here.
+    // For rejected decisions the Edge Function skips email — send it here.
     if (decisionType === 'rejected' && application) {
-      fetch('/api/send-status-email', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          applicant_id: application.applicant_id,
-          new_status:   'Dossier refusé',
-        }),
-      }).catch(err => console.error('[send-status-email rejected]', err))
+      try {
+        await fetch('/api/send-status-email', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            applicant_id: application.applicant_id,
+            new_status:   'Dossier refusé',
+          }),
+        })
+      } catch (err) {
+        console.error('[send-status-email rejected]', err)
+      }
     }
 
     const labels: Record<string, string> = {

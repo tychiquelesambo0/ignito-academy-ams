@@ -8,9 +8,10 @@
  *   Dossier refusé         → rejection (dignified, no detail)
  */
 
+import React from 'react'
 import {
   Html, Head, Preview, Body, Container, Section,
-  Row, Column, Text, Button, Hr, Img,
+  Text, Button, Hr,
 } from '@react-email/components'
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -157,6 +157,7 @@ export default function ApplicationDetailPage() {
   const [updateSuccess,   setUpdateSuccess]   = useState(false)
   const [versionConflict, setVersionConflict] = useState(false)
   const [updateError,     setUpdateError]     = useState<string | null>(null)
+  const [emailNotif,      setEmailNotif]      = useState<{ ok: boolean; msg: string } | null>(null)
 
   // Decision action state (Edge Function buttons)
   const [decidingType,    setDecidingType]    = useState<string | null>(null)
@@ -295,16 +296,30 @@ export default function ApplicationDetailPage() {
         .eq('applicant_id', application.applicant_id)
     }
 
-    // Fire status-change email (fire-and-forget — don't block the UI)
-    fetch('/api/send-status-email', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        applicant_id:        application.applicant_id,
-        new_status:          selectedStatus,
-        conditional_message: selectedStatus === 'Admission sous réserve' ? condMessage.trim() : undefined,
-      }),
-    }).catch(err => console.error('[send-status-email]', err))
+    // Send status-change notification email and surface the result to the admin
+    try {
+      const emailRes = await fetch('/api/send-status-email', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          applicant_id:        application.applicant_id,
+          new_status:          selectedStatus,
+          conditional_message: selectedStatus === 'Admission sous réserve' ? condMessage.trim() : undefined,
+        }),
+      })
+      const emailData = await emailRes.json()
+      if (emailData.skipped) {
+        setEmailNotif(null) // no email needed for this status
+      } else if (!emailRes.ok || !emailData.success) {
+        setEmailNotif({ ok: false, msg: `Email non envoyé : ${emailData.error ?? 'Erreur inconnue'}` })
+      } else {
+        setEmailNotif({ ok: true, msg: `Email envoyé à ${emailData.recipient}` })
+      }
+    } catch (err) {
+      setEmailNotif({ ok: false, msg: `Erreur réseau lors de l'envoi de l'email.` })
+      console.error('[send-status-email]', err)
+    }
+    setTimeout(() => setEmailNotif(null), 8000)
 
     // Success — refresh data to get new version number
     setUpdateSuccess(true)
@@ -726,6 +741,18 @@ export default function ApplicationDetailPage() {
                     <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                       <p className="text-xs text-emerald-800 font-medium">Statut mis à jour avec succès.</p>
+                    </div>
+                  )}
+
+                  {/* Email notification result */}
+                  {emailNotif && (
+                    <div className={`flex items-center gap-2 p-3 rounded-lg border ${emailNotif.ok ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+                      {emailNotif.ok
+                        ? <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        : <AlertCircle   className="w-4 h-4 text-red-500 flex-shrink-0" />}
+                      <p className={`text-xs font-medium ${emailNotif.ok ? 'text-blue-800' : 'text-red-700'}`}>
+                        {emailNotif.msg}
+                      </p>
                     </div>
                   )}
 

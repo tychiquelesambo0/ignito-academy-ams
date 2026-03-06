@@ -44,7 +44,8 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export async function sendEmailWithRetry(opts: SendEmailOptions): Promise<SendEmailResult> {
   const maxRetries  = opts.maxRetries ?? 3
-  const fromEmail   = process.env.FROM_EMAIL ?? 'admin@ignitoacademy.com'
+  // Fall back to Resend's shared testing sender until a custom domain is verified
+  const fromEmail   = process.env.FROM_EMAIL ?? 'onboarding@resend.dev'
   const resendKey   = process.env.RESEND_API_KEY
 
   // Initialise service-role Supabase client for logging (bypasses RLS)

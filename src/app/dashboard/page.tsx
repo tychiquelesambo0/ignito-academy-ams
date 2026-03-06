@@ -187,15 +187,7 @@ export default function DashboardPage() {
     }
   }
 
-  // Diploma is only required if the applicant has already obtained their diploma
-  const diplomaRequired = application?.exam_status === 'Diplôme obtenu'
-  const REQUIRED_DOC_TYPES = [
-    'identification',
-    'bulletin_10',
-    'bulletin_11',
-    'bulletin_12',
-    ...(diplomaRequired ? ['diploma'] : []),
-  ]
+  // REQUIRED_DOC_TYPES is computed per-application inside the map below (depends on exam_status)
 
   // Check if user has completed applications from previous years
   const currentYear = new Date().getFullYear()
@@ -261,7 +253,16 @@ export default function DashboardPage() {
         {/* ── Applications ── */}
         <div className="space-y-8">
           {applicationsWithDocs && applicationsWithDocs.length > 0 ? (
-            applicationsWithDocs.map((application) => (
+            applicationsWithDocs.map((application) => {
+              const diplomaRequired = application.exam_status === 'Diplôme obtenu'
+              const REQUIRED_DOC_TYPES = [
+                'identification',
+                'bulletin_10',
+                'bulletin_11',
+                'bulletin_12',
+                ...(diplomaRequired ? ['diploma'] : []),
+              ]
+              return (
               <div key={application.id} className="space-y-5">
 
                 {/* Meta row */}
@@ -525,7 +526,7 @@ export default function DashboardPage() {
                 </div>
 
               </div>
-            ))
+            )})
           ) : (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
               <p className="text-slate-400 mb-5 text-sm">Vous n&apos;avez pas encore de candidature en cours.</p>

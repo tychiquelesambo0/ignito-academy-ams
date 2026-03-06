@@ -68,8 +68,13 @@ function SignUpForm() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        phone: data.phone_number,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            full_name: `${data.prenom} ${data.nom}`,
+            phone: data.phone_number,
+          },
         },
       })
 

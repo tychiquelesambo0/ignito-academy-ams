@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -16,8 +16,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Vous devez être connecté' }, { status: 401 })
     }
 
+    // Use admin client for lookups — ownership is enforced by .eq('user_id') filters
+    const admin = createAdminClient()
+
     // Fetch the record first to verify ownership and get the storage path
-    const { data: doc, error: fetchError } = await supabase
+    const { data: doc, error: fetchError } = await admin
       .from('uploaded_documents')
       .select('id, file_path, user_id, applicant_id')
       .eq('id', documentId)
@@ -30,7 +33,7 @@ export async function DELETE(request: NextRequest) {
 
     // Lock deletes once payment is confirmed — UNLESS admin has re-opened the
     // window via Admission sous réserve status.
-    const { data: application } = await (supabase as any)
+    const { data: application } = await admin
       .from('applications')
       .select('payment_status, application_status')
       .eq('applicant_id', doc.applicant_id)
@@ -58,7 +61,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete DB record
-    const { error: dbError } = await supabase
+    const { error: dbError } = await admin
       .from('uploaded_documents')
       .delete()
       .eq('id', documentId)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 const MAX_FILE_SIZE = 5242880 // 5MB
 const ACCEPTED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
@@ -46,8 +46,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify application exists and belongs to user
-    const { data: application, error: appError } = await (supabase as any)
+    // Verify application exists and belongs to the authenticated user.
+    // Use admin client to bypass RLS — ownership is enforced by the .eq('user_id') filter.
+    const admin = createAdminClient()
+    const { data: application, error: appError } = await admin
       .from('applications')
       .select('applicant_id, payment_status, application_status, intake_year')
       .eq('applicant_id', applicantId)

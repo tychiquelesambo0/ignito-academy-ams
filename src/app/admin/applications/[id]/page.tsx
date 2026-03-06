@@ -311,15 +311,19 @@ export default function ApplicationDetailPage() {
       if (emailData.skipped) {
         setEmailNotif(null) // no email needed for this status
       } else if (!emailRes.ok || !emailData.success) {
-        setEmailNotif({ ok: false, msg: `Email non envoyé : ${emailData.error ?? 'Erreur inconnue'}` })
+        const detail = emailData.detail ? ` (${emailData.detail})` : ''
+        setEmailNotif({ ok: false, msg: `Email non envoyé : ${emailData.error ?? 'Erreur inconnue'}${detail}` })
+      } else if (emailData.wasMock) {
+        setEmailNotif({ ok: false, msg: `⚠ Mode test : RESEND_API_KEY manquant dans Vercel — aucun email réel envoyé. Ajoutez une vraie clé Resend dans les variables d'environnement.` })
       } else {
-        setEmailNotif({ ok: true, msg: `Email envoyé à ${emailData.recipient}` })
+        const idSuffix = emailData.messageId ? ` (ID Resend : ${emailData.messageId})` : ''
+        setEmailNotif({ ok: true, msg: `Email envoyé à ${emailData.recipient}${idSuffix}` })
       }
     } catch (err) {
       setEmailNotif({ ok: false, msg: `Erreur réseau lors de l'envoi de l'email.` })
       console.error('[send-status-email]', err)
     }
-    setTimeout(() => setEmailNotif(null), 8000)
+    setTimeout(() => setEmailNotif(null), 15000)
 
     // Success — refresh data to get new version number
     setUpdateSuccess(true)
@@ -377,7 +381,7 @@ export default function ApplicationDetailPage() {
     // For rejected decisions the Edge Function skips email — send it here.
     if (decisionType === 'rejected' && application) {
       try {
-        await fetch('/api/send-status-email', {
+        const emailRes = await fetch('/api/send-status-email', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({
@@ -385,6 +389,15 @@ export default function ApplicationDetailPage() {
             new_status:   'Dossier refusé',
           }),
         })
+        const emailData = await emailRes.json()
+        if (emailData.wasMock) {
+          setEmailNotif({ ok: false, msg: `⚠ Mode test : RESEND_API_KEY manquant — aucun email réel envoyé.` })
+        } else if (!emailRes.ok || !emailData.success) {
+          setEmailNotif({ ok: false, msg: `Email non envoyé : ${emailData.error ?? 'Erreur inconnue'}` })
+        } else {
+          setEmailNotif({ ok: true, msg: `Email de refus envoyé à ${emailData.recipient}` })
+        }
+        setTimeout(() => setEmailNotif(null), 15000)
       } catch (err) {
         console.error('[send-status-email rejected]', err)
       }

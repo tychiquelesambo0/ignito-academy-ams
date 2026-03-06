@@ -34,6 +34,8 @@ export interface SendEmailResult {
   messageId?:  string
   retryCount:  number
   error?:      string
+  /** True when the send was skipped due to missing/mock RESEND_API_KEY */
+  wasMock?:    boolean
 }
 
 // ─── Utility: sleep ───────────────────────────────────────────────────────────
@@ -70,16 +72,18 @@ export async function sendEmailWithRetry(opts: SendEmailOptions): Promise<SendEm
   const logId = logRow?.id as string | undefined
 
   // Dev/staging shortcut — no Resend key configured
-  if (!resendKey || resendKey === 'mock-resend-api-key') {
-    console.warn(`[email] RESEND_API_KEY not configured — skipping send for ${opts.applicantId} (${opts.emailType})`)
+  const isMockKey = !resendKey || resendKey === 'mock-resend-api-key' || resendKey.startsWith('mock-')
+  if (isMockKey) {
+    console.warn(`[email] RESEND_API_KEY not configured or is a mock key — skipping real send for ${opts.applicantId} (${opts.emailType}). Set a real RESEND_API_KEY to send emails.`)
     if (logId) {
       await supabase.from('email_logs').update({
-        status:      'sent',
-        retry_count: 0,
-        sent_at:     new Date().toISOString(),
+        status:        'sent',
+        retry_count:   0,
+        sent_at:       new Date().toISOString(),
+        error_message: 'MOCK_MODE: email not actually sent',
       }).eq('id', logId)
     }
-    return { success: true, retryCount: 0 }
+    return { success: true, retryCount: 0, wasMock: true }
   }
 
   const resend = new Resend(resendKey)

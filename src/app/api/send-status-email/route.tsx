@@ -11,10 +11,11 @@
  * Security: caller must be an authenticated admissions officer.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { render }                    from '@react-email/render'
+import React                          from 'react'
+import { NextRequest, NextResponse }   from 'next/server'
+import { render }                      from '@react-email/render'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
-import { sendEmailWithRetry }        from '@/lib/email/send-with-retry'
+import { sendEmailWithRetry }          from '@/lib/email/send-with-retry'
 import {
   ApplicationStatusEmail,
   getStatusEmailSubject,
@@ -89,9 +90,9 @@ export async function POST(request: NextRequest) {
     const name = `${apt.prenom} ${apt.nom}`
     const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://ignitoacademy.com'}/dashboard`
 
-    // Render React Email → HTML string
+    // Render React Email → HTML string (must use React.createElement, not direct call)
     const html = await render(
-      ApplicationStatusEmail({
+      React.createElement(ApplicationStatusEmail, {
         applicantName:      name,
         applicantId:        applicant_id,
         status:             new_status,
@@ -99,8 +100,16 @@ export async function POST(request: NextRequest) {
         conditionalMessage: new_status === 'Admission sous réserve' ? conditional_message : undefined,
       }),
     )
+    console.log(`[send-status-email] HTML rendered, length=${html.length}`)
 
     const subject = getStatusEmailSubject(new_status, applicant_id)
+
+    const emailType = new_status === 'en_cours_devaluation'   ? 'payment_confirmation'
+                    : new_status === 'Admission sous réserve' ? 'conditional_acceptance'
+                    : new_status === 'Admission définitive'   ? 'final_acceptance'
+                    : 'refusal'
+
+    console.log(`[send-status-email] Sending ${emailType} to ${apt.email}`)
 
     // Send with retry + audit log
     const result = await sendEmailWithRetry({
@@ -108,15 +117,18 @@ export async function POST(request: NextRequest) {
       subject,
       html,
       applicantId: applicant_id,
-      emailType:   new_status === 'en_cours_devaluation'   ? 'payment_confirmation'
-                 : new_status === 'Admission sous réserve' ? 'conditional_acceptance'
-                 : new_status === 'Admission définitive'   ? 'final_acceptance'
-                 : 'refusal',
+      emailType,
     })
+
+    console.log(`[send-status-email] result:`, JSON.stringify(result))
 
     if (!result.success) {
       return NextResponse.json(
-        { error: `Échec d'envoi email après ${result.retryCount} tentatives.`, detail: result.error },
+        {
+          error:      `Échec d'envoi email après ${result.retryCount} tentatives.`,
+          detail:     String(result.error),
+          recipient:  apt.email,
+        },
         { status: 500 },
       )
     }
@@ -124,6 +136,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success:    true,
       messageId:  result.messageId,
+      wasMock:    result.wasMock ?? false,
       retryCount: result.retryCount,
       recipient:  apt.email,
     })

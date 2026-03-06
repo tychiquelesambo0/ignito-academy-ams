@@ -52,7 +52,7 @@ function getContent(
         eyebrow:     'Confirmation de candidature',
         heading:     "Votre dossier est en cours d'évaluation",
         body:        `Cher/Chère ${name}, nous confirmons la réception de votre candidature et de votre paiement. Votre dossier est désormais entre les mains de notre Comité des Admissions. Nous vous contacterons dès qu'une décision aura été prise.`,
-        highlight:   { text: 'Dossier reçu · Paiement confirmé · En cours d'évaluation', color: 'green' },
+        highlight:   { text: "Dossier reçu · Paiement confirmé · En cours d\u2019évaluation", color: 'green' },
         buttonLabel: 'Suivre mon dossier',
       }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { sendEmailWithRetry } from '@/lib/email/send-with-retry'
 import { paymentConfirmationEmail } from '@/lib/email/templates'
 
@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
 
     // Get Nomba API key from environment
     const nombaApiKey = process.env.NOMBA_API_KEY
-    const useMockPayment = !nombaApiKey || process.env.USE_MOCK_PAYMENT === 'true'
+    const isPlaceholderKey = !nombaApiKey || nombaApiKey.startsWith('mock-') || nombaApiKey === 'your-nomba-api-key'
+    const useMockPayment = isPlaceholderKey || process.env.USE_MOCK_PAYMENT === 'true'
     
     console.log('Payment mode check:', {
       nombaApiKey: nombaApiKey ? 'SET' : 'NOT SET',
@@ -87,9 +88,11 @@ export async function POST(request: NextRequest) {
     // MOCK PAYMENT MODE - Simulate successful payment
     if (useMockPayment) {
       console.log(`💰 MOCK: Simulating payment for ${applicantId} via ${provider}`)
+
+      // Use service-role client to bypass RLS for this trusted server-side update
+      const adminClient = createAdminClient()
       
-      // Immediately confirm payment in mock mode (no delay needed for testing)
-      const { error: updateError } = await supabase
+      const { error: updateError } = await adminClient
         .from('applications')
         .update({
           payment_status: 'paid',
@@ -109,11 +112,11 @@ export async function POST(request: NextRequest) {
 
       console.log(`✅ MOCK: Payment confirmed immediately for ${applicantId}`)
 
-      // Fetch applicant profile for the confirmation email
-      const { data: profile } = await supabase
+      // Fetch applicant profile for the confirmation email (applicants.id = user.id)
+      const { data: profile } = await adminClient
         .from('applicants')
         .select('prenom, nom, email')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single()
 
       if (profile) {

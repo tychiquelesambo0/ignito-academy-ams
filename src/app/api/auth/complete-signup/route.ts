@@ -20,18 +20,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userId et email sont requis.' }, { status: 400 })
     }
 
-    // 1. Upsert profile — handle both id and email conflicts
-    // If an orphaned record exists with the same email but different id, remove it first
-    const { data: existingByEmail } = await admin
-      .from('applicants')
-      .select('id')
-      .eq('email', email)
-      .single()
+    // 1. Upsert profile — clean up any orphaned records that share email or phone
+    //    before attempting the upsert, to avoid unique-constraint violations.
 
-    if (existingByEmail && existingByEmail.id !== userId) {
-      // Orphaned record from a previous failed attempt — clean it up
-      await admin.from('applications').delete().eq('user_id', existingByEmail.id)
-      await admin.from('applicants').delete().eq('id', existingByEmail.id)
+    // Collect all orphaned ids in one pass
+    const orphanIds = new Set<string>()
+
+    const { data: byEmail } = await admin
+      .from('applicants').select('id').eq('email', email).maybeSingle()
+    if (byEmail && byEmail.id !== userId) orphanIds.add(byEmail.id)
+
+    if (phone_number) {
+      const { data: byPhone } = await admin
+        .from('applicants').select('id').eq('phone_number', phone_number).maybeSingle()
+      if (byPhone && byPhone.id !== userId) orphanIds.add(byPhone.id)
+    }
+
+    for (const orphanId of orphanIds) {
+      await admin.from('applications').delete().eq('user_id', orphanId)
+      await admin.from('applicants').delete().eq('id', orphanId)
     }
 
     const { error: profileError } = await admin.from('applicants').upsert({

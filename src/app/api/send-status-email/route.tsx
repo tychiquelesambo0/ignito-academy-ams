@@ -202,27 +202,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Accès réservé au Bureau des Admissions.' }, { status: 403 })
     }
 
-    // 5. Fetch applicant directly from applicants table (no FK join needed)
+    // 5. Resolve applicant_id (formatted, e.g. IGN-2026-00008) → user_id UUID
+    //    because applicants.id is a UUID, not the formatted applicant_id string
+    const { data: appRow, error: appErr } = await adminDb
+      .from('applications')
+      .select('user_id')
+      .eq('applicant_id', applicant_id)
+      .single()
+
+    if (appErr || !appRow) {
+      console.error('[send-status-email] application lookup failed for', applicant_id, appErr?.message)
+      return NextResponse.json({ error: `Dossier introuvable : ${applicant_id}` }, { status: 404 })
+    }
+
+    // 6. Fetch applicant details using the UUID
     const { data: applicant, error: aptErr } = await adminDb
       .from('applicants')
       .select('prenom, nom, email')
-      .eq('id', applicant_id)
+      .eq('id', appRow.user_id)
       .single()
 
     if (aptErr || !applicant) {
-      console.error('[send-status-email] applicant lookup failed for', applicant_id, aptErr?.message)
-      return NextResponse.json({ error: `Candidat introuvable : ${applicant_id}` }, { status: 404 })
+      console.error('[send-status-email] applicant lookup failed for user_id', appRow.user_id, aptErr?.message)
+      return NextResponse.json({ error: `Profil candidat introuvable pour ${applicant_id}` }, { status: 404 })
     }
 
     const name         = `${applicant.prenom} ${applicant.nom}`
     const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://ignitoacademy.com'}/dashboard`
 
-    // 6. Build HTML email (no React rendering — pure template string)
+    // 7. Build HTML email (no React rendering — pure template string)
     const { subject, html } = buildEmail(status, name, applicant_id, dashboardUrl, conditional_message)
 
     console.log(`[send-status-email] built email for ${applicant.email}, status=${status}, subject="${subject}"`)
 
-    // 7. Check for mock mode
+    // 8. Check for mock mode
     const resendKey = process.env.RESEND_API_KEY
     const isMock = !resendKey || resendKey.startsWith('mock-') || resendKey === 'your-resend-api-key'
 
@@ -231,7 +244,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, wasMock: true, recipient: applicant.email })
     }
 
-    // 8. Send via Resend
+    // 9. Send via Resend
     const resend    = new Resend(resendKey)
     const fromEmail = process.env.FROM_EMAIL ?? 'onboarding@resend.dev'
 

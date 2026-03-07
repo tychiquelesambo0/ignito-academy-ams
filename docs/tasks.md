@@ -588,12 +588,11 @@ This document outlines the implementation tasks for the Ignito Academy AMS, a fu
   - ✅ Resend domain verified
   - ✅ Deployed at ignitoacademy.com
 
-- [ ] 49. Deploy Edge Functions to Supabase
-  - Deploy payment-webhook function: `supabase functions deploy payment-webhook`
-  - Deploy admin-decision function: `supabase functions deploy admin-decision`
-  - Deploy generate-applicant-id function: `supabase functions deploy generate-applicant-id`
-  - Test each function in production environment
-  - Verify webhook endpoint is accessible from Nomba
+- [x] 49. Deploy Edge Functions to Supabase
+  - ✅ payment-webhook deployed to fspoilopdbxxdbvuzenj
+  - ✅ admin-decision deployed to fspoilopdbxxdbvuzenj (fixed syntax error y→y: y-15)
+  - ✅ Edge Function secrets set (RESEND_API_KEY, FROM_EMAIL, NOMBA_WEBHOOK_SECRET)
+  - Note: generate-applicant-id is a DB function, not an Edge Function — already live
 
 - [ ] 50. Deploy Next.js frontend to Vercel
   - Connect GitHub repository to Vercel

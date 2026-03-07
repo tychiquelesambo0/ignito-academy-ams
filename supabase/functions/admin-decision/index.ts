@@ -202,7 +202,7 @@ async function generateDecisionPDF(opts: {
 
   // ── Signature block ────────────────────────────────────────────────────────
   page.drawText('La Direction des Admissions',  { x: 40, y,      size: 10, font: bold,    color: navy  })
-  page.drawText('Ignito Academy',               { x: 40, y - 15, size: 10, font: regular, color: slate })
+  page.drawText('Ignito Academy',               { x: 40, y: y - 15, size: 10, font: regular, color: slate })
 
   // ── Footer ─────────────────────────────────────────────────────────────────
   const footer = opts.footerText

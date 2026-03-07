@@ -1,12 +1,13 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from './lib/supabase/types'
 
+// 30 days — keeps the cookie alive so the refresh token can always be used
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient<Database>(
@@ -18,26 +19,34 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          // Write cookies onto the request so downstream handlers see them
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          response = NextResponse.next({
-            request,
-          })
+          response = NextResponse.next({ request })
+          // Write cookies onto the response with a long maxAge so they are
+          // never treated as session-only cookies by the browser.
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, {
+              ...options,
+              maxAge:   SESSION_MAX_AGE,
+              sameSite: 'lax',
+              secure:   process.env.NODE_ENV === 'production',
+            })
           )
         },
       },
     }
   )
 
+  // getUser() will silently refresh an expired access token using the
+  // refresh token and write updated cookies via setAll above.
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser()
 
-  // If the auth token is invalid (user deleted from auth.users), sign out and redirect
+  // If the auth token is invalid (user deleted from auth.users), force sign-out
   if (authError && authError.message !== 'Auth session missing!') {
     await supabase.auth.signOut()
     const redirectUrl = request.nextUrl.pathname.startsWith('/admin')
@@ -46,12 +55,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(redirectUrl, request.url))
   }
 
-  // Protected routes for applicants (dashboard)
+  // ── Applicant dashboard ──────────────────────────────────────────────────
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
       return NextResponse.redirect(new URL('/apply', request.url))
     }
-    // Check the applicant still exists in the applicants table
+
+    // Verify the applicant record still exists
     const { data: applicant } = await supabase
       .from('applicants')
       .select('id')
@@ -64,15 +74,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Protected routes for admissions officers (admin)
+  // ── Admin portal ─────────────────────────────────────────────────────────
   if (request.nextUrl.pathname.startsWith('/admin')) {
-    // Allow the login and forbidden pages through without auth checks
     const isPublicAdminRoute =
       request.nextUrl.pathname === '/admin/login' ||
       request.nextUrl.pathname === '/admin/forbidden'
 
     if (isPublicAdminRoute) {
-      // If already authenticated as an officer, skip straight to dashboard
+      // Already authenticated officers skip straight to the dashboard
       if (user && request.nextUrl.pathname === '/admin/login') {
         const { data: officer } = await supabase
           .from('admissions_officers')
@@ -88,12 +97,10 @@ export async function middleware(request: NextRequest) {
       return response
     }
 
-    // All other /admin/* routes require authentication
     if (!user) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
-    // Verify the user is an active admissions officer
     const { data: officer, error } = await supabase
       .from('admissions_officers')
       .select('id, is_active')
@@ -110,13 +117,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

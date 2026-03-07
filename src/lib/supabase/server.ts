@@ -1,7 +1,10 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from './types'
+
+// 30 days — matches the middleware so cookies are always persistent
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30
 
 /** Service-role client — bypasses RLS. Use only in trusted server-side routes. */
 export function createAdminClient() {
@@ -29,12 +32,16 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, {
+                ...options,
+                maxAge:   SESSION_MAX_AGE,
+                sameSite: 'lax',
+                secure:   process.env.NODE_ENV === 'production',
+              })
             )
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Called from a Server Component — safe to ignore;
+            // the middleware handles cookie refresh.
           }
         },
       },

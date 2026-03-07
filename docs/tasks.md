@@ -594,13 +594,12 @@ This document outlines the implementation tasks for the Ignito Academy AMS, a fu
   - ✅ Edge Function secrets set (RESEND_API_KEY, FROM_EMAIL, NOMBA_WEBHOOK_SECRET)
   - Note: generate-applicant-id is a DB function, not an Edge Function — already live
 
-- [ ] 50. Deploy Next.js frontend to Vercel
-  - Connect GitHub repository to Vercel
-  - Configure build settings: `npm run build`
-  - Set environment variables in Vercel
-  - Deploy to production: `vercel --prod`
-  - Verify deployment successful
-  - Test landing page, application flow, dashboard
+- [x] 50. Deploy Next.js frontend to Vercel
+  - ✅ GitHub repository connected to Vercel (auto-deploy on push to main)
+  - ✅ Build command: `npm run build` — passing in production
+  - ✅ All environment variables set in Vercel (Supabase, Resend, Nomba, PDF assets)
+  - ✅ Live at https://ignitoacademy.com — HTTP 200 on /, /apply, /dashboard
+  - ✅ Admin portal live at https://ignitoacademy.com/admin
 
 - [ ] 51. Set up monitoring and error tracking
   - Configure Sentry or similar error tracking service

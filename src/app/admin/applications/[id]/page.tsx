@@ -152,7 +152,7 @@ export default function ApplicationDetailPage() {
   const [officerId,    setOfficerId]    = useState<string | null>(null)
 
   // Status update state (manual dropdown)
-  const [selectedStatus,  setSelectedStatus]  = useState('')
+  const [selectedStatus,  setSelectedStatus]  = useState<string>('')
   const [isUpdating,      setIsUpdating]      = useState(false)
   const [updateSuccess,   setUpdateSuccess]   = useState(false)
   const [versionConflict, setVersionConflict] = useState(false)
@@ -233,7 +233,7 @@ export default function ApplicationDetailPage() {
       updated_at:          raw.updated_at,
     }
     setApplication(appData)
-    setSelectedStatus(appData.application_status)
+    setSelectedStatus('')      // always reset to placeholder on load/refresh
     setCondMessage(appData.conditional_message ?? '')
 
     // Fetch documents
@@ -252,7 +252,7 @@ export default function ApplicationDetailPage() {
   // ── Status update (with optimistic locking) ────────────────────────────────
 
   const handleStatusUpdate = async () => {
-    if (!application || selectedStatus === application.application_status) return
+    if (!application || !selectedStatus || selectedStatus === application.application_status) return
 
     // Admission sous réserve requires a message for the applicant
     if (selectedStatus === 'Admission sous réserve' && !condMessage.trim()) {
@@ -466,7 +466,7 @@ export default function ApplicationDetailPage() {
 
   const statusStyle = APP_STATUS_STYLE[application.application_status] ?? APP_STATUS_STYLE['Dossier Créé']
   const StatusIcon  = statusStyle.icon
-  const isDirty     = selectedStatus !== application.application_status
+  const isDirty     = selectedStatus !== '' && selectedStatus !== application.application_status
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -704,6 +704,7 @@ export default function ApplicationDetailPage() {
                       }}
                       className="w-full h-10 rounded-lg border border-slate-200 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-[#4EA6F5]/40 focus:border-[#4EA6F5] transition-colors bg-white"
                     >
+                      <option value="" disabled>— Choisir un nouveau statut —</option>
                       {STATUS_OPTIONS.map(o => (
                         <option key={o.value} value={o.value}>{o.label}</option>
                       ))}

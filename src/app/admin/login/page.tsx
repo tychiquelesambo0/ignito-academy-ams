@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -19,9 +18,14 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
+// Mock admin credentials for testing
+const MOCK_ADMIN = {
+  email: 'admin@ignitoacademy.com',
+  password: 'admin123',
+}
+
 export default function AdminLoginPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -35,35 +39,18 @@ export default function AdminLoginPage() {
   const onSubmit = async (data: FormData) => {
     setServerError(null)
 
-    // Step 1 — authenticate
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email:    data.email,
-      password: data.password,
-    })
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    console.log('[v0] Mock: Admin login attempt for:', data.email)
 
-    if (authError || !authData.user) {
+    // Mock authentication check
+    if (data.email === MOCK_ADMIN.email && data.password === MOCK_ADMIN.password) {
+      // Mock successful login - redirect to admin dashboard
+      router.push('/admin')
+    } else {
       setServerError('Email ou mot de passe incorrect.')
-      return
     }
-
-    // Step 2 — verify officer status (server-side gate; middleware also enforces this)
-    const { data: officer } = await supabase
-      .from('admissions_officers')
-      .select('id, is_active')
-      .eq('id', authData.user.id)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (!officer) {
-      // Sign out immediately — this account has no admin privileges
-      await supabase.auth.signOut()
-      setServerError(
-        "Accès refusé. Ce compte n'est pas autorisé à accéder au Bureau des Admissions."
-      )
-      return
-    }
-
-    router.push('/admin')
   }
 
   return (
@@ -95,6 +82,11 @@ export default function AdminLoginPage() {
 
           {/* Card */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 space-y-5">
+
+            {/* Mock credentials hint */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-xs">
+              <strong>Mode test:</strong> Utilisez <code className="bg-blue-100 px-1 rounded">admin@ignitoacademy.com</code> / <code className="bg-blue-100 px-1 rounded">admin123</code>
+            </div>
 
             {/* Server error */}
             {serverError && (

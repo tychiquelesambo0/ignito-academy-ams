@@ -7,13 +7,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2, ShieldCheck, AlertTriangle } from 'lucide-react'
 
 function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -25,32 +23,24 @@ function ResetPasswordForm() {
   const [sessionReady, setSessionReady] = useState(false)
   const [sessionError, setSessionError] = useState(false)
 
-  // Exchange the token_hash from the URL for an active session
+  // Mock: Simulate token verification
   useEffect(() => {
     const tokenHash = searchParams.get('token_hash')
     const type = searchParams.get('type')
 
-    if (tokenHash && type === 'recovery') {
-      supabase.auth
-        .verifyOtp({ token_hash: tokenHash, type: 'recovery' })
-        .then(({ error }) => {
-          if (error) {
-            setSessionError(true)
-          } else {
-            setSessionReady(true)
-          }
-        })
-    } else {
-      // Fallback: check if there's already an active session (hash-based flow)
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session) {
-          setSessionReady(true)
-        } else {
-          setSessionError(true)
-        }
-      })
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    // Simulate async verification
+    const timer = setTimeout(() => {
+      if (tokenHash && type === 'recovery') {
+        // Mock: token is valid
+        setSessionReady(true)
+      } else {
+        // No token provided - show error
+        setSessionError(true)
+      }
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,14 +56,12 @@ function ResetPasswordForm() {
     }
 
     setIsLoading(true)
-    const { error: updateError } = await supabase.auth.updateUser({ password })
+    
+    // Mock: Simulate password update
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('[v0] Mock: Password would be updated to:', password.substring(0, 2) + '***')
+    
     setIsLoading(false)
-
-    if (updateError) {
-      setError(`Erreur : ${updateError.message}`)
-      return
-    }
-
     setSuccess(true)
     setTimeout(() => router.push('/apply?tab=connexion'), 3000)
   }
@@ -81,7 +69,7 @@ function ResetPasswordForm() {
   return (
     <div className="min-h-screen flex">
 
-      {/* ── Left Panel ── */}
+      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 hero-gradient flex-col relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full opacity-[0.12] pointer-events-none hero-orb-1"
           style={{ background: 'radial-gradient(circle, #4EA6F5 0%, transparent 70%)' }} />
@@ -120,7 +108,7 @@ function ResetPasswordForm() {
         </div>
       </div>
 
-      {/* ── Right Panel ── */}
+      {/* Right Panel */}
       <div className="w-full lg:w-1/2 flex flex-col bg-white min-h-screen">
 
         {/* Mobile header */}

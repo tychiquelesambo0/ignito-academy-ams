@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import {
   ArrowLeft, User, GraduationCap, CreditCard, FileText,
   Download, Loader2, CheckCircle2, Clock, AlertCircle,
@@ -43,6 +42,88 @@ interface UploadedDoc {
   file_path: string; document_type: string | null
 }
 
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_APPLICANT: Applicant = {
+  prenom: 'Jean',
+  nom: 'Kabila',
+  email: 'jean.kabila@email.com',
+  phone_number: '+243 812 345 678',
+  date_naissance: '2004-05-15',
+}
+
+const MOCK_APPLICATION: Application = {
+  applicant_id: 'IA-2026-001234',
+  intake_year: 2026,
+  ecole_provenance: 'Lycée Bosangani',
+  option_academique: 'Sciences Physiques',
+  exam_status: 'Diplôme obtenu',
+  application_status: 'en_cours_devaluation',
+  payment_status: 'paid',
+  transaction_id: 'TXN-2026-ABC123',
+  payment_confirmed_at: '2026-01-15T12:30:00Z',
+  conditional_message: null,
+  version: 1,
+  created_at: '2026-01-15T10:30:00Z',
+  updated_at: '2026-01-15T12:30:00Z',
+  graduation_year: 2025,
+  grade_10_average: 75.5,
+  grade_11_average: 78.2,
+  grade_12_average: 82.0,
+  exetat_percentage: 85.0,
+  is_scholarship_eligible: true,
+  scholarship_status: 'pending',
+  scholarship_video_url: null,
+}
+
+const MOCK_DOCUMENTS: UploadedDoc[] = [
+  {
+    id: '1',
+    file_name: 'carte_identite.pdf',
+    file_size_bytes: 245000,
+    mime_type: 'application/pdf',
+    uploaded_at: '2026-01-15T10:35:00Z',
+    file_path: 'documents/IA-2026-001234/carte_identite.pdf',
+    document_type: 'identification',
+  },
+  {
+    id: '2',
+    file_name: 'diplome_etat.pdf',
+    file_size_bytes: 520000,
+    mime_type: 'application/pdf',
+    uploaded_at: '2026-01-15T10:40:00Z',
+    file_path: 'documents/IA-2026-001234/diplome_etat.pdf',
+    document_type: 'diploma',
+  },
+  {
+    id: '3',
+    file_name: 'bulletin_10.pdf',
+    file_size_bytes: 180000,
+    mime_type: 'application/pdf',
+    uploaded_at: '2026-01-15T10:45:00Z',
+    file_path: 'documents/IA-2026-001234/bulletin_10.pdf',
+    document_type: 'bulletin_10',
+  },
+  {
+    id: '4',
+    file_name: 'bulletin_11.pdf',
+    file_size_bytes: 175000,
+    mime_type: 'application/pdf',
+    uploaded_at: '2026-01-15T10:50:00Z',
+    file_path: 'documents/IA-2026-001234/bulletin_11.pdf',
+    document_type: 'bulletin_11',
+  },
+  {
+    id: '5',
+    file_name: 'bulletin_12.pdf',
+    file_size_bytes: 190000,
+    mime_type: 'application/pdf',
+    uploaded_at: '2026-01-15T10:55:00Z',
+    file_path: 'documents/IA-2026-001234/bulletin_12.pdf',
+    document_type: 'bulletin_12',
+  },
+]
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -55,7 +136,6 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   other:                 'Autre document',
 }
 
-// Ordered groups mirroring the applicant dashboard
 const DOC_GROUPS = [
   {
     key:   'identification',
@@ -157,17 +237,14 @@ export default function ApplicationDetailPage() {
   const [application,  setApplication]  = useState<Application | null>(null)
   const [documents,    setDocuments]    = useState<UploadedDoc[]>([])
   const [loading,      setLoading]      = useState(true)
-  const [officerId,    setOfficerId]    = useState<string | null>(null)
 
   // Status update state (manual dropdown)
   const [selectedStatus,  setSelectedStatus]  = useState<string>('')
   const [isUpdating,      setIsUpdating]      = useState(false)
   const [updateSuccess,   setUpdateSuccess]   = useState(false)
-  const [versionConflict, setVersionConflict] = useState(false)
   const [updateError,     setUpdateError]     = useState<string | null>(null)
-  const [emailNotif,      setEmailNotif]      = useState<{ ok: boolean; msg: string } | null>(null)
 
-  // Decision action state (Edge Function buttons)
+  // Decision action state
   const [decidingType,    setDecidingType]    = useState<string | null>(null)
   const [decisionSuccess, setDecisionSuccess] = useState<string | null>(null)
   const [decisionError,   setDecisionError]   = useState<string | null>(null)
@@ -178,101 +255,28 @@ export default function ApplicationDetailPage() {
   // Document download state
   const [downloading, setDownloading] = useState<string | null>(null)
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
+  // ── Mock Fetch ──────────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/admin/login'); return }
-
-    // Verify officer
-    const { data: officer } = await supabase
-      .from('admissions_officers')
-      .select('id, is_active')
-      .eq('id', user.id)
-      .eq('is_active', true)
-      .maybeSingle()
-    if (!officer) { router.push('/admin/forbidden'); return }
-    setOfficerId(user.id)
-
-    // Fetch application + applicant in one join
-    const { data: appRow, error: appErr } = await supabase
-      .from('applications')
-      .select(`
-        applicant_id, intake_year, ecole_provenance, option_academique,
-        exam_status, application_status, payment_status,
-        transaction_id, payment_confirmed_at,
-        version, created_at, updated_at,
-        graduation_year, grade_10_average, grade_11_average, grade_12_average,
-        exetat_percentage, is_scholarship_eligible, scholarship_status, scholarship_video_url,
-        applicants!inner (
-          prenom, nom, email, phone_number, date_naissance
-        )
-      `)
-      .eq('applicant_id', applicantId)
-      .single()
-
-    if (appErr || !appRow) {
-      router.push('/admin'); return
-    }
-
-    // Cast to any: conditional_message was added via a direct SQL migration and
-    // isn't reflected in the auto-generated Supabase TypeScript types yet.
-    const raw = appRow as any
-    const apt = raw.applicants
-    setApplicant({
-      prenom:         apt.prenom,
-      nom:            apt.nom,
-      email:          apt.email,
-      phone_number:   apt.phone_number,
-      date_naissance: apt.date_naissance,
-    })
-    const appData: Application = {
-      applicant_id:        raw.applicant_id,
-      intake_year:         raw.intake_year,
-      ecole_provenance:    raw.ecole_provenance,
-      option_academique:   raw.option_academique,
-      exam_status:         raw.exam_status,
-      application_status:  raw.application_status,
-      payment_status:      raw.payment_status,
-      transaction_id:      raw.transaction_id,
-      payment_confirmed_at: raw.payment_confirmed_at,
-      conditional_message:     raw.conditional_message ?? null,
-      version:                 raw.version,
-      created_at:              raw.created_at,
-      updated_at:              raw.updated_at,
-      graduation_year:         raw.graduation_year ?? null,
-      grade_10_average:        raw.grade_10_average ?? null,
-      grade_11_average:        raw.grade_11_average ?? null,
-      grade_12_average:        raw.grade_12_average ?? null,
-      exetat_percentage:       raw.exetat_percentage ?? null,
-      is_scholarship_eligible: raw.is_scholarship_eligible ?? false,
-      scholarship_status:      raw.scholarship_status ?? 'pending',
-      scholarship_video_url:   raw.scholarship_video_url ?? null,
-    }
-    setApplication(appData)
-    setSelectedStatus('')      // always reset to placeholder on load/refresh
-    setCondMessage(appData.conditional_message ?? '')
-
-    // Fetch documents
-    const { data: docs } = await supabase
-      .from('uploaded_documents')
-      .select('id, file_name, file_size_bytes, mime_type, uploaded_at, file_path, document_type')
-      .eq('applicant_id', applicantId)
-      .order('uploaded_at', { ascending: true })
-
-    setDocuments(docs ?? [])
+    // Simulate loading delay
+    await new Promise(resolve => setTimeout(resolve, 600))
+    
+    console.log('[v0] Mock: Loading application detail for:', applicantId)
+    
+    setApplicant(MOCK_APPLICANT)
+    setApplication({ ...MOCK_APPLICATION, applicant_id: applicantId })
+    setDocuments(MOCK_DOCUMENTS)
+    setCondMessage(MOCK_APPLICATION.conditional_message ?? '')
     setLoading(false)
-  }, [applicantId, router])
+  }, [applicantId])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // ── Status update (with optimistic locking) ────────────────────────────────
+  // ── Mock Status update ────────────────────────────────────────────────────
 
   const handleStatusUpdate = async () => {
     if (!application || !selectedStatus || selectedStatus === application.application_status) return
 
-    // Admission sous réserve requires a message for the applicant
     if (selectedStatus === 'Admission sous réserve' && !condMessage.trim()) {
       setUpdateError("Un message pour le candidat est obligatoire pour l'admission sous réserve. Saisissez-le ci-dessous.")
       return
@@ -280,190 +284,68 @@ export default function ApplicationDetailPage() {
 
     setIsUpdating(true)
     setUpdateError(null)
-    setVersionConflict(false)
     setUpdateSuccess(false)
 
-    const supabase = createClient()
-    const { data, error } = await supabase.rpc(
-      'update_application_status_with_version_check',
-      {
-        p_applicant_id:      application.applicant_id,
-        p_new_status:        selectedStatus,
-        p_expected_version:  application.version,
-      } as any
-    )
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('[v0] Mock: Updating status to:', selectedStatus)
 
-    setIsUpdating(false)
-
-    if (error) {
-      setUpdateError("Erreur lors de la mise à jour du statut. Veuillez réessayer.")
-      return
-    }
-
-    if (data === false) {
-      // Version mismatch — another officer edited concurrently
-      setVersionConflict(true)
-      return
-    }
-
-    // When setting Admission sous réserve, also persist the conditional message
-    if (selectedStatus === 'Admission sous réserve' && condMessage.trim()) {
-      await (supabase as any)
-        .from('applications')
-        .update({ conditional_message: condMessage.trim() })
-        .eq('applicant_id', application.applicant_id)
-    }
-
-    // Send status-change notification email and surface the result to the admin
-    try {
-      const emailRes = await fetch('/api/send-status-email', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          applicant_id:        application.applicant_id,
-          new_status:          selectedStatus,
-          conditional_message: selectedStatus === 'Admission sous réserve' ? condMessage.trim() : undefined,
-        }),
-      })
-      const emailData = await emailRes.json()
-      if (emailData.skipped) {
-        setEmailNotif(null) // no email needed for this status
-      } else if (!emailRes.ok || !emailData.success) {
-        const detail = emailData.detail ? ` (${emailData.detail})` : ''
-        setEmailNotif({ ok: false, msg: `Email non envoyé : ${emailData.error ?? 'Erreur inconnue'}${detail}` })
-      } else if (emailData.wasMock) {
-        setEmailNotif({ ok: false, msg: `⚠ Mode test : RESEND_API_KEY manquant dans Vercel — aucun email réel envoyé. Ajoutez une vraie clé Resend dans les variables d'environnement.` })
-      } else {
-        const idSuffix = emailData.messageId ? ` (ID Resend : ${emailData.messageId})` : ''
-        setEmailNotif({ ok: true, msg: `Email envoyé à ${emailData.recipient}${idSuffix}` })
-      }
-    } catch (err) {
-      setEmailNotif({ ok: false, msg: `Erreur réseau lors de l'envoi de l'email.` })
-      console.error('[send-status-email]', err)
-    }
-    setTimeout(() => setEmailNotif(null), 15000)
-
-    // Success — refresh data to get new version number
+    // Update local state
+    setApplication(prev => prev ? { ...prev, application_status: selectedStatus, version: prev.version + 1 } : null)
     setUpdateSuccess(true)
-    await fetchData()
+    setSelectedStatus('')
+    setIsUpdating(false)
     setTimeout(() => setUpdateSuccess(false), 3000)
   }
 
-  // ── Decision action (calls admin-decision Edge Function) ──────────────────
+  // ── Mock Decision action ──────────────────────────────────────────────────
 
   const handleDecision = async (decisionType: 'conditional' | 'final' | 'rejected') => {
-    if (!application || !officerId) return
+    if (!application) return
     setDecidingType(decisionType)
     setDecisionError(null)
     setDecisionSuccess(null)
-    setVersionConflict(false)
 
-    const supabase = createClient()
-    const { data, error } = await supabase.functions.invoke('admin-decision', {
-      body: {
-        applicant_id:     application.applicant_id,
-        decision_type:    decisionType,
-        admin_id:         officerId,
-        expected_version: application.version,
-      },
-    })
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    console.log('[v0] Mock: Processing decision:', decisionType)
 
-    setDecidingType(null)
-
-    if (error) {
-      setDecisionError("Une erreur réseau est survenue. Veuillez réessayer.")
-      return
+    const statusMap = {
+      conditional: 'Admission sous réserve',
+      final: 'Admission définitive',
+      rejected: 'Dossier refusé',
     }
 
-    if (data?.error === 'VERSION_CONFLICT' || data?.error === 'VERSION_CONFLICT_LATE') {
-      setVersionConflict(true)
-      setDecisionError("Cette candidature a été modifiée par un autre utilisateur. Veuillez actualiser la page.")
-      return
-    }
-
-    if (data?.error === 'PDF_GENERATION_FAILED') {
-      setDecisionError("La génération du courrier a échoué. Le statut n'a pas été modifié.")
-      return
-    }
-
-    if (data?.error === 'EMAIL_SEND_FAILED') {
-      setDecisionError("L'envoi de l'email a échoué après 3 tentatives. Le statut n'a pas été modifié.")
-      return
-    }
-
-    if (!data?.success) {
-      setDecisionError(data?.message ?? "Une erreur inattendue est survenue. Veuillez réessayer.")
-      return
-    }
-
-    // For rejected decisions the Edge Function skips email — send it here.
-    if (decisionType === 'rejected' && application) {
-      try {
-        const emailRes = await fetch('/api/send-status-email', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({
-            applicant_id: application.applicant_id,
-            new_status:   'Dossier refusé',
-          }),
-        })
-        const emailData = await emailRes.json()
-        if (emailData.wasMock) {
-          setEmailNotif({ ok: false, msg: `⚠ Mode test : RESEND_API_KEY manquant — aucun email réel envoyé.` })
-        } else if (!emailRes.ok || !emailData.success) {
-          setEmailNotif({ ok: false, msg: `Email non envoyé : ${emailData.error ?? 'Erreur inconnue'}` })
-        } else {
-          setEmailNotif({ ok: true, msg: `Email de refus envoyé à ${emailData.recipient}` })
-        }
-        setTimeout(() => setEmailNotif(null), 15000)
-      } catch (err) {
-        console.error('[send-status-email rejected]', err)
-      }
-    }
+    // Update local state
+    setApplication(prev => prev ? { ...prev, application_status: statusMap[decisionType], version: prev.version + 1 } : null)
 
     const labels: Record<string, string> = {
-      conditional: "Admission sous réserve accordée. L'email de notification a été envoyé.",
-      final:       "Admission définitive accordée. L'email de félicitations a été envoyé.",
-      rejected:    "Dossier refusé. L'email de notification a été envoyé au candidat.",
+      conditional: "Admission sous réserve accordée. L'email de notification serait envoyé.",
+      final:       "Admission définitive accordée. L'email de félicitations serait envoyé.",
+      rejected:    "Dossier refusé. L'email de notification serait envoyé au candidat.",
     }
     setDecisionSuccess(labels[decisionType])
-    await fetchData()
+    setDecidingType(null)
     setTimeout(() => setDecisionSuccess(null), 5000)
   }
 
-  // ── Conditional admission decision ────────────────────────────────────────
-
-  // ── Document download ──────────────────────────────────────────────────────
+  // ── Mock Document download ──────────────────────────────────────────────────
 
   const handleDownload = async (doc: UploadedDoc) => {
     setDownloading(doc.id)
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(doc.file_path, 120) // 2 min expiry
-
-      if (error || !data?.signedUrl) { alert('Erreur lors du téléchargement.'); return }
-
-      const response = await fetch(data.signedUrl)
-      const blob     = await response.blob()
-      const url      = window.URL.createObjectURL(blob)
-      const a        = document.createElement('a')
-      a.href         = url
-      a.download     = doc.file_name
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } catch { alert('Erreur lors du téléchargement.') }
-    finally  { setDownloading(null) }
+    
+    // Simulate download delay
+    await new Promise(resolve => setTimeout(resolve, 800))
+    console.log('[v0] Mock: Would download document:', doc.file_name)
+    
+    alert(`Mode test: Le fichier "${doc.file_name}" serait téléchargé.`)
+    setDownloading(null)
   }
 
   // ── Sign out ───────────────────────────────────────────────────────────────
 
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+  const handleSignOut = () => {
+    console.log('[v0] Mock: Admin signing out')
     router.push('/admin/login')
   }
 
@@ -507,414 +389,247 @@ export default function ApplicationDetailPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-12 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-10 space-y-6">
 
-        {/* ── Breadcrumb ── */}
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#021463] transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Retour au tableau de bord
-        </Link>
-
-        {/* ── Header card ── */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-widest mb-1">
-                Dossier de candidature
-              </p>
-              <h1 className="font-serif text-3xl font-bold text-[#021463] leading-tight">
-                {applicant.prenom} {applicant.nom}
-              </h1>
-              <p className="font-mono text-sm text-slate-500 mt-1">{application.applicant_id}</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:items-end">
-              {/* Application status badge */}
-              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
-                <StatusIcon className="w-4 h-4" />
-                {APP_STATUS_LABELS[application.application_status] ?? application.application_status}
-              </span>
-              {/* Payment badge */}
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-md border text-xs font-medium ${PAY_STYLE[application.payment_status] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                Paiement : {PAY_LABELS[application.payment_status] ?? application.payment_status}
-              </span>
-              <p className="text-xs text-slate-400">
-                Soumis le {new Date(application.created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric', month: 'long', year: 'numeric',
-                })}
-              </p>
-            </div>
+        {/* ── Back link + ID ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1.5 text-sm text-[#4EA6F5] hover:text-[#021463] font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Retour à la liste
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Identifiant</span>
+            <span className="font-mono text-sm font-bold text-[#021463] bg-slate-100 px-2 py-0.5 rounded">{application.applicant_id}</span>
           </div>
         </div>
 
-        {/* ── Two-column layout ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── Header card ── */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-2xl font-bold text-[#021463]">
+              {applicant.prenom} {applicant.nom}
+            </h1>
+            <p className="text-slate-500 text-sm mt-0.5">Rentrée {application.intake_year}</p>
+          </div>
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${statusStyle.bg} ${statusStyle.text}`}>
+            <StatusIcon className="w-4 h-4" />
+            <span className="text-sm font-semibold">{APP_STATUS_LABELS[application.application_status]}</span>
+          </div>
+        </div>
 
-          {/* ── Left column (2/3): data sections ── */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* ── Scholarship badge ── */}
+        {application.is_scholarship_eligible && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <BadgeCheck className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-amber-800">Candidat à la Bourse d&apos;Excellence</p>
+              <p className="text-xs text-amber-600">Ce candidat a postulé pour la bourse d&apos;études.</p>
+            </div>
+          </div>
+        )}
 
-            {/* Personal info */}
-            <SectionCard icon={User} title="Informations personnelles">
-              <InfoRow label="Prénom"          value={applicant.prenom} />
-              <InfoRow label="Nom"             value={applicant.nom} />
-              <InfoRow label="Email"           value={applicant.email} />
-              <InfoRow label="Téléphone"       value={applicant.phone_number} />
-              <InfoRow label="Date de naissance" value={new Date(applicant.date_naissance).toLocaleDateString('fr-FR', {
-                day: 'numeric', month: 'long', year: 'numeric',
-              })} />
-            </SectionCard>
+        {/* ── 2-col grid ── */}
+        <div className="grid md:grid-cols-2 gap-6">
 
-            {/* Academic history */}
-            <SectionCard icon={GraduationCap} title="Historique académique">
-              <InfoRow label="École de provenance"        value={application.ecole_provenance} />
-              <InfoRow label="Option académique"          value={application.option_academique} />
-              <InfoRow label="Examen d'État"              value={application.exam_status} />
-              <InfoRow label="Année d'intégration"        value={String(application.intake_year)} />
-              {application.graduation_year && (
-                <InfoRow label="Année d'obtention" value={String(application.graduation_year)} />
-              )}
-            </SectionCard>
+          {/* Personal info */}
+          <SectionCard icon={User} title="Informations Personnelles">
+            <InfoRow label="Prénom" value={applicant.prenom} />
+            <InfoRow label="Nom" value={applicant.nom} />
+            <InfoRow label="Email" value={applicant.email} />
+            <InfoRow label="Téléphone" value={applicant.phone_number} />
+            <InfoRow label="Date de naissance" value={applicant.date_naissance ? new Date(applicant.date_naissance).toLocaleDateString('fr-FR') : null} />
+          </SectionCard>
 
-            {/* ── Grade Grid (always visible for all applications) ── */}
-            <SectionCard icon={GraduationCap} title="Notes académiques déclarées">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: '10e année',  value: application.grade_10_average },
-                  { label: '11e année',  value: application.grade_11_average },
-                  { label: '12e année',  value: application.grade_12_average },
-                  { label: 'Exétat (%)', value: application.exetat_percentage },
-                ].map(({ label, value }) => (
-                  <div key={label} className="bg-slate-50 rounded-lg border border-slate-200 p-3 text-center">
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-                    <p className={`text-xl font-bold ${
-                      value == null ? 'text-slate-300' :
-                      value >= 70   ? 'text-emerald-600' :
-                      value >= 50   ? 'text-amber-600'   : 'text-red-500'
-                    }`}>
-                      {value != null ? `${value}%` : '—'}
-                    </p>
-                    {value != null && (
-                      <p className="text-[10px] mt-1 font-medium text-slate-400">
-                        {value >= 70 ? '✓ ≥ 70%' : value >= 50 ? '△ ≥ 50%' : '✗ < 50%'}
-                      </p>
-                    )}
-                  </div>
-                ))}
+          {/* Academic info */}
+          <SectionCard icon={GraduationCap} title="Informations Académiques">
+            <InfoRow label="École" value={application.ecole_provenance} />
+            <InfoRow label="Option" value={application.option_academique} />
+            <InfoRow label="Année diplôme" value={application.graduation_year?.toString()} />
+            <InfoRow label="Examen d'État" value={application.exam_status} />
+            <InfoRow label="Pourcentage Exetat" value={application.exetat_percentage ? `${application.exetat_percentage}%` : null} />
+          </SectionCard>
+
+          {/* Grades */}
+          <SectionCard icon={FileText} title="Moyennes Scolaires">
+            <InfoRow label="10e année" value={application.grade_10_average ? `${application.grade_10_average}%` : null} />
+            <InfoRow label="11e année" value={application.grade_11_average ? `${application.grade_11_average}%` : null} />
+            <InfoRow label="12e année" value={application.grade_12_average ? `${application.grade_12_average}%` : null} />
+          </SectionCard>
+
+          {/* Payment info */}
+          <SectionCard icon={CreditCard} title="Paiement">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Statut</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${PAY_STYLE[application.payment_status] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                  {PAY_LABELS[application.payment_status] ?? application.payment_status}
+                </span>
               </div>
-              {application.grade_10_average != null && application.grade_11_average != null && application.grade_12_average != null && (
-                <div className="mt-3 flex items-center gap-2 p-2.5 bg-[#021463]/5 rounded-lg">
-                  <span className="text-xs font-semibold text-[#021463]">Moyenne 3 ans :</span>
-                  <span className={`text-sm font-bold ${
-                    ((application.grade_10_average + application.grade_11_average + application.grade_12_average) / 3) >= 70
-                      ? 'text-emerald-600' : 'text-amber-600'
-                  }`}>
-                    {((application.grade_10_average + application.grade_11_average + application.grade_12_average) / 3).toFixed(1)}%
-                  </span>
-                </div>
-              )}
-            </SectionCard>
+              <InfoRow label="Transaction ID" value={application.transaction_id} />
+              <InfoRow label="Confirmé le" value={application.payment_confirmed_at ? new Date(application.payment_confirmed_at).toLocaleString('fr-FR') : null} />
+            </div>
+          </SectionCard>
+        </div>
 
-            {/* ── Scholarship Evaluation (only for eligible candidates) ── */}
-            {application.is_scholarship_eligible && (
-              <div className="rounded-xl border border-amber-400 overflow-hidden">
-                <div className="bg-amber-50 px-5 py-3 border-b border-amber-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-amber-500 text-lg">⭐</span>
-                    <p className="font-bold text-amber-900 text-sm">Évaluation Bourse d&apos;Excellence</p>
+        {/* ── Documents ── */}
+        <SectionCard icon={FileText} title="Documents Soumis">
+          <div className="space-y-6">
+            {DOC_GROUPS.map(group => {
+              const groupDocs = documents.filter(d => group.types.includes(d.document_type ?? ''))
+              if (groupDocs.length === 0) return null
+              return (
+                <div key={group.key}>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-2">{group.title}</h4>
+                  <div className="space-y-2">
+                    {groupDocs.map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">{doc.file_name}</p>
+                            <p className="text-xs text-slate-400">
+                              {(doc.file_size_bytes / 1024).toFixed(0)} Ko • {new Date(doc.uploaded_at).toLocaleDateString('fr-FR')}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownload(doc)}
+                          disabled={downloading === doc.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#4EA6F5] hover:text-[#021463] hover:bg-blue-50 rounded-md transition-colors disabled:opacity-50"
+                        >
+                          {downloading === doc.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
+                          Télécharger
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-                    application.scholarship_status === 'submitted'
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                      : 'bg-amber-100 text-amber-800 border-amber-300'
-                  }`}>
-                    {application.scholarship_status === 'submitted' ? '✅ Vidéo soumise' :
-                     application.scholarship_status === 'eligible'  ? '⭐ Éligible' : application.scholarship_status}
-                  </span>
                 </div>
-                <div className="bg-amber-50/50 px-5 py-4 space-y-3">
-                  {application.scholarship_video_url ? (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Essai vidéo soumis</p>
-                      <a
-                        href={application.scholarship_video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#4EA6F5] hover:bg-[#4EA6F5]/90 text-white text-sm font-semibold rounded-md transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                        ▶️ Visionner l&apos;Essai Vidéo
-                      </a>
-                      <p className="text-xs text-amber-700 break-all">{application.scholarship_video_url}</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-amber-700 italic">Le candidat n&apos;a pas encore soumis son essai vidéo.</p>
-                  )}
-                </div>
+              )
+            })}
+          </div>
+        </SectionCard>
+
+        {/* ── Decision Actions ── */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="flex items-center gap-2 px-6 py-4 border-b border-slate-100">
+            <Gavel className="w-4 h-4 text-[#4EA6F5]" />
+            <h3 className="font-serif text-sm font-bold text-[#021463]">Actions de Décision</h3>
+          </div>
+          <div className="p-6 space-y-4">
+
+            {/* Success/Error messages */}
+            {decisionSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                {decisionSuccess}
+              </div>
+            )}
+            {decisionError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {decisionError}
               </div>
             )}
 
-            {/* Payment info */}
-            <SectionCard icon={CreditCard} title="Informations de paiement">
-              <InfoRow label="Statut paiement" value={PAY_LABELS[application.payment_status] ?? application.payment_status} />
-              <InfoRow label="Référence"       value={application.transaction_id} />
-              <InfoRow label="Confirmé le"     value={
-                application.payment_confirmed_at
-                  ? new Date(application.payment_confirmed_at).toLocaleDateString('fr-FR', {
-                      day: 'numeric', month: 'long', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit',
-                    })
-                  : null
-              } />
-            </SectionCard>
+            {/* Decision buttons */}
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => handleDecision('conditional')}
+                disabled={decidingType !== null || application.application_status === 'Admission sous réserve'}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {decidingType === 'conditional' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                Admission sous réserve
+              </button>
+              <button
+                onClick={() => handleDecision('final')}
+                disabled={decidingType !== null || application.application_status === 'Admission définitive'}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {decidingType === 'final' ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                Admission définitive
+              </button>
+              <button
+                onClick={() => handleDecision('rejected')}
+                disabled={decidingType !== null || application.application_status === 'Dossier refusé'}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {decidingType === 'rejected' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldX className="w-4 h-4" />}
+                Refuser le dossier
+              </button>
+            </div>
 
-            {/* Documents — 4-card categorised layout (mirrors applicant dashboard) */}
-            <SectionCard icon={FileText} title={`Pièces justificatives (${documents.length} fichier${documents.length !== 1 ? 's' : ''})`}>
-              {documents.length === 0 ? (
-                <p className="text-sm text-slate-400 py-3">Aucun document téléchargé.</p>
-              ) : (
-                <div className="space-y-3 -mx-1">
-                  {DOC_GROUPS.map(group => {
-                    const groupDocs = documents.filter(d => group.types.includes(d.document_type ?? ''))
-                    // Only show "Documents Additionnels" card when docs exist
-                    if (group.key === 'additional' && groupDocs.length === 0) return null
+            {/* Conditional message input */}
+            {(selectedStatus === 'Admission sous réserve' || application.application_status === 'Admission sous réserve') && (
+              <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <label className="block text-sm font-semibold text-purple-800 mb-2">
+                  Message pour le candidat (documents manquants, conditions, etc.)
+                </label>
+                <textarea
+                  value={condMessage}
+                  onChange={(e) => setCondMessage(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  placeholder="Ex: Veuillez soumettre votre diplôme d'État une fois obtenu..."
+                />
+              </div>
+            )}
 
-                    return (
-                      <div key={group.key} className="bg-slate-50 rounded-xl border border-slate-200 p-4">
-                        {/* Card header */}
-                        <div className="flex items-center gap-2 mb-1">
-                          <FileText className={`w-3.5 h-3.5 flex-shrink-0 ${group.key === 'additional' ? 'text-amber-500' : 'text-[#4EA6F5]'}`} />
-                          <p className="text-xs font-bold text-[#021463]">{group.title}</p>
-                          <span className="ml-auto text-[10px] text-slate-400 font-medium">
-                            {group.key === 'additional'
-                              ? `${groupDocs.length} fichier${groupDocs.length !== 1 ? 's' : ''}`
-                              : `${groupDocs.length}/${group.types.length}`}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mb-3">{group.desc}</p>
-
-                        {/* Bulletins: one row per sub-type */}
-                        {group.key === 'bulletins' ? (
-                          <div className="divide-y divide-slate-200">
-                            {group.types.map((type, i) => {
-                              const doc = documents.find(d => d.document_type === type)
-                              return (
-                                <div key={type} className={`flex items-center justify-between gap-3 ${i === 0 ? 'pb-2.5' : i < group.types.length - 1 ? 'py-2.5' : 'pt-2.5'}`}>
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    {doc
-                                      ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                                      : <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex-shrink-0" />}
-                                    <div className="min-w-0">
-                                      <p className="text-xs font-medium text-slate-700">{DOC_TYPE_LABELS[type]}</p>
-                                      {doc && <p className="text-[11px] text-slate-400 truncate max-w-[200px]">{doc.file_name}</p>}
-                                    </div>
-                                  </div>
-                                  {doc && (
-                                    <button
-                                      onClick={() => handleDownload(doc)}
-                                      disabled={downloading === doc.id}
-                                      className="flex items-center gap-1 text-[11px] font-medium text-[#4EA6F5] border border-[#4EA6F5] hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
-                                    >
-                                      {downloading === doc.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-                                      Télécharger
-                                    </button>
-                                  )}
-                                </div>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          /* Identity, Diploma, Additionnels: one row per file */
-                          <div className="divide-y divide-slate-200">
-                            {groupDocs.length === 0 ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex-shrink-0" />
-                                <p className="text-xs text-slate-400 italic">Non soumis</p>
-                              </div>
-                            ) : (
-                              groupDocs.map((doc, i) => (
-                                <div key={doc.id} className={`flex items-center justify-between gap-3 ${i === 0 ? (groupDocs.length > 1 ? 'pb-2.5' : '') : i < groupDocs.length - 1 ? 'py-2.5' : 'pt-2.5'}`}>
-                                  <div className="flex items-start gap-2 min-w-0">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                    <div className="min-w-0">
-                                      <p className="text-xs text-slate-700 truncate max-w-[200px]">{doc.file_name}</p>
-                                      <p className="text-[11px] text-slate-400">
-                                        {(doc.file_size_bytes / 1048576).toFixed(2)} Mo &middot;{' '}
-                                        {new Date(doc.uploaded_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={() => handleDownload(doc)}
-                                    disabled={downloading === doc.id}
-                                    className="flex items-center gap-1 text-[11px] font-medium text-[#4EA6F5] border border-[#4EA6F5] hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
-                                  >
-                                    {downloading === doc.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-                                    Télécharger
-                                  </button>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+            {/* Manual status update (fallback) */}
+            <div className="pt-4 border-t border-slate-100">
+              <p className="text-xs text-slate-400 mb-2">Ou modifier manuellement le statut:</p>
+              <div className="flex items-center gap-3">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="h-10 px-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4EA6F5]/40"
+                >
+                  <option value="">Sélectionner un statut…</option>
+                  {STATUS_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleStatusUpdate}
+                  disabled={!isDirty || isUpdating}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#021463] hover:bg-[#021463]/90 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Appliquer
+                </button>
+              </div>
+              {updateSuccess && (
+                <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Statut mis à jour avec succès.
+                </p>
               )}
-            </SectionCard>
-          </div>
-
-          {/* ── Right column (1/3): status panel ── */}
-          <div className="space-y-6">
-            <div className="lg:sticky lg:top-[84px] space-y-4">
-
-
-              {/* Status update card */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-                  <Lock className="w-4 h-4 text-[#4EA6F5]" />
-                  <h3 className="font-serif text-sm font-bold text-[#021463]">Statut du dossier</h3>
-                  <span className="ml-auto text-[10px] text-slate-400 font-mono">v{application.version}</span>
-                </div>
-
-                <div className="px-5 py-5 space-y-4">
-
-                  {/* Current status */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Statut actuel</p>
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${statusStyle.bg} ${statusStyle.text}`}>
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      {APP_STATUS_LABELS[application.application_status] ?? application.application_status}
-                    </span>
-                  </div>
-
-                  {/* New status select */}
-                  <div className="space-y-2.5">
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Mettre à jour</p>
-                    <select
-                      value={selectedStatus}
-                      onChange={e => {
-                        setSelectedStatus(e.target.value)
-                        setVersionConflict(false)
-                        setUpdateError(null)
-                        setUpdateSuccess(false)
-                      }}
-                      className="w-full h-10 rounded-lg border border-slate-200 text-sm px-3 focus:outline-none focus:ring-2 focus:ring-[#4EA6F5]/40 focus:border-[#4EA6F5] transition-colors bg-white"
-                    >
-                      <option value="" disabled>— Choisir un nouveau statut —</option>
-                      {STATUS_OPTIONS.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-
-                    {/* Inline required message — only when Admission sous réserve is selected */}
-                    {selectedStatus === 'Admission sous réserve' && (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 space-y-2">
-                        <p className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider flex items-center gap-1">
-                          <span className="text-amber-500">★</span> Message obligatoire
-                        </p>
-                        <textarea
-                          value={condMessage}
-                          onChange={e => { setCondMessage(e.target.value); setUpdateError(null) }}
-                          placeholder="Ex. : Veuillez soumettre votre bulletin de la 12e année certifié par l'école."
-                          rows={3}
-                          className="w-full rounded-md border border-amber-200 bg-white text-xs px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-colors resize-none text-amber-900 placeholder-amber-300"
-                        />
-                        {!condMessage.trim() && (
-                          <p className="text-[10px] text-amber-600">
-                            Ce message sera affiché au candidat et inclus dans sa lettre de décision.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Version conflict warning */}
-                  {versionConflict && (
-                    <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-xs text-amber-800">
-                        <p className="font-semibold mb-1">Conflit de modification</p>
-                        <p>Cette candidature a été modifiée par un autre utilisateur. Veuillez actualiser la page avant de continuer.</p>
-                        <button
-                          onClick={() => { setVersionConflict(false); fetchData() }}
-                          className="flex items-center gap-1 mt-2 text-amber-700 font-semibold hover:underline"
-                        >
-                          <RefreshCw className="w-3 h-3" /> Actualiser
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Generic error */}
-                  {updateError && !versionConflict && (
-                    <p className="text-xs text-red-500">{updateError}</p>
-                  )}
-
-                  {/* Success */}
-                  {updateSuccess && (
-                    <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <p className="text-xs text-emerald-800 font-medium">Statut mis à jour avec succès.</p>
-                    </div>
-                  )}
-
-                  {/* Email notification result */}
-                  {emailNotif && (
-                    <div className={`flex items-center gap-2 p-3 rounded-lg border ${emailNotif.ok ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
-                      {emailNotif.ok
-                        ? <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                        : <AlertCircle   className="w-4 h-4 text-red-500 flex-shrink-0" />}
-                      <p className={`text-xs font-medium ${emailNotif.ok ? 'text-blue-800' : 'text-red-700'}`}>
-                        {emailNotif.msg}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Submit button */}
-                  {(() => {
-                    const condMsgMissing = selectedStatus === 'Admission sous réserve' && !condMessage.trim()
-                    const canSubmit = isDirty && !isUpdating && !versionConflict && !condMsgMissing
-                    return (
-                      <button
-                        onClick={handleStatusUpdate}
-                        disabled={!canSubmit}
-                        className={`w-full h-10 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2
-                          ${canSubmit
-                            ? 'bg-[#021463] hover:bg-[#021463]/90 text-white'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
-                      >
-                        {isUpdating
-                          ? <><Loader2 className="w-4 h-4 animate-spin" />Mise à jour…</>
-                          : 'Enregistrer le statut'}
-                      </button>
-                    )
-                  })()}
-                </div>
-              </div>
-
-              {/* Metadata card */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-2">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Métadonnées</p>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between"><span className="text-slate-400">Identifiant</span><span className="font-mono font-bold text-[#021463]">{application.applicant_id}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Promotion</span><span className="text-slate-700">{application.intake_year}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Créé le</span><span className="text-slate-700">{new Date(application.created_at).toLocaleDateString('fr-FR')}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Modifié le</span><span className="text-slate-700">{new Date(application.updated_at).toLocaleDateString('fr-FR')}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Révision</span><span className="font-mono text-slate-700">v{application.version}</span></div>
-                </div>
-              </div>
-
+              {updateError && (
+                <p className="text-xs text-red-600 mt-2">{updateError}</p>
+              )}
             </div>
           </div>
         </div>
 
-        <p className="text-center text-xs text-slate-300 pt-4">© 2026 Ignito Academy. Tous droits réservés.</p>
+        {/* ── Metadata ── */}
+        <div className="text-xs text-slate-400 flex flex-wrap gap-4">
+          <span>Créé le {new Date(application.created_at).toLocaleString('fr-FR')}</span>
+          <span>Mis à jour le {new Date(application.updated_at).toLocaleString('fr-FR')}</span>
+          <span>Version {application.version}</span>
+        </div>
       </main>
+
+      {/* Footer */}
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center">
+        <p className="text-xs text-slate-300">© 2026 Ignito Academy. Tous droits réservés.</p>
+      </footer>
     </div>
   )
 }

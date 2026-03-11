@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import {
   Users, Clock, CheckCircle2, CreditCard, LogOut,
   FileText, AlertCircle, Search, X, ChevronUp, ChevronDown,
@@ -33,6 +32,77 @@ interface Application {
 
 type SortKey = 'applicant_id' | 'nom' | 'exam_status' | 'payment_status' | 'application_status' | 'created_at'
 type SortDir = 'asc' | 'desc'
+
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_OFFICER: OfficerProfile = {
+  prenom: 'Marie',
+  nom: 'Dupont',
+  role: 'Responsable Admissions'
+}
+
+const MOCK_APPLICATIONS: Application[] = [
+  {
+    applicant_id: 'IA-2026-001234',
+    application_status: 'en_cours_devaluation',
+    payment_status: 'paid',
+    created_at: '2026-01-15T10:30:00Z',
+    exam_status: 'Diplôme obtenu',
+    prenom: 'Jean',
+    nom: 'Kabila',
+    is_scholarship_eligible: true,
+  },
+  {
+    applicant_id: 'IA-2026-001235',
+    application_status: 'Admission définitive',
+    payment_status: 'paid',
+    created_at: '2026-01-14T14:20:00Z',
+    exam_status: 'Diplôme obtenu',
+    prenom: 'Marie',
+    nom: 'Lumumba',
+    is_scholarship_eligible: false,
+  },
+  {
+    applicant_id: 'IA-2026-001236',
+    application_status: 'Admission sous réserve',
+    payment_status: 'paid',
+    created_at: '2026-01-13T09:15:00Z',
+    exam_status: 'En attente des résultats',
+    prenom: 'Patrick',
+    nom: 'Mukendi',
+    is_scholarship_eligible: true,
+  },
+  {
+    applicant_id: 'IA-2026-001237',
+    application_status: 'Dossier Créé',
+    payment_status: 'Pending',
+    created_at: '2026-01-12T16:45:00Z',
+    exam_status: null,
+    prenom: 'Ange',
+    nom: 'Tshisekedi',
+    is_scholarship_eligible: false,
+  },
+  {
+    applicant_id: 'IA-2026-001238',
+    application_status: 'Dossier refusé',
+    payment_status: 'Failed',
+    created_at: '2026-01-11T11:00:00Z',
+    exam_status: 'Diplôme obtenu',
+    prenom: 'Grace',
+    nom: 'Mbeki',
+    is_scholarship_eligible: false,
+  },
+  {
+    applicant_id: 'IA-2026-001239',
+    application_status: 'en_cours_devaluation',
+    payment_status: 'paid',
+    created_at: '2026-01-10T08:30:00Z',
+    exam_status: 'Diplôme obtenu',
+    prenom: 'Samuel',
+    nom: 'Kasongo',
+    is_scholarship_eligible: true,
+  },
+]
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -128,53 +198,25 @@ export default function AdminDashboardPage() {
   const [sortKey,     setSortKey]     = useState<SortKey | null>(null)
   const [sortDir,     setSortDir]     = useState<SortDir>('asc')
 
-  // ── Data fetch ────────────────────────────────────────────────────────────
+  // ── Mock data fetch ────────────────────────────────────────────────────────
 
   useEffect(() => {
-    (async () => {
-      const supabase = createClient()
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) { router.push('/admin/login'); return }
-
-      const { data: officerData, error: officerError } = await supabase
-        .from('admissions_officers')
-        .select('prenom, nom, role, is_active')
-        .eq('id', user.id)
-        .single()
-
-      const officer = officerData as any
-      if (officerError || !officer?.is_active) { router.push('/admin/forbidden'); return }
-      setOfficer(officer)
-
-      const { data: rows } = await supabase
-        .from('applications')
-        .select(`
-          applicant_id, application_status, payment_status,
-          created_at, exam_status, is_scholarship_eligible,
-          applicants!inner (prenom, nom)
-        `)
-        .order('created_at', { ascending: false })
-
-      const all: Application[] = (rows ?? []).map((a: any) => ({
-        applicant_id:       a.applicant_id,
-        application_status: a.application_status,
-        payment_status:     a.payment_status,
-        created_at:         a.created_at,
-        exam_status:             a.exam_status ?? null,
-        is_scholarship_eligible: a.is_scholarship_eligible ?? false,
-        prenom:                  a.applicants?.prenom ?? '—',
-        nom:                     a.applicants?.nom    ?? '—',
-      }))
-
-      setApps(all)
+    // Simulate loading delay
+    const timer = setTimeout(() => {
+      console.log('[v0] Mock: Loading admin dashboard data')
+      
+      setOfficer(MOCK_OFFICER)
+      setApps(MOCK_APPLICATIONS)
       setStats({
-        total:             all.length,
-        enCours:           all.filter(a => a.application_status === 'en_cours_devaluation' || a.application_status === 'Frais Réglés').length,
-        decisions:         all.filter(a => DECISION_STATUSES.includes(a.application_status)).length,
-        paymentsConfirmed: all.filter(a => a.payment_status === 'paid' || a.payment_status === 'Confirmed').length,
+        total:             MOCK_APPLICATIONS.length,
+        enCours:           MOCK_APPLICATIONS.filter(a => a.application_status === 'en_cours_devaluation' || a.application_status === 'Frais Réglés').length,
+        decisions:         MOCK_APPLICATIONS.filter(a => DECISION_STATUSES.includes(a.application_status)).length,
+        paymentsConfirmed: MOCK_APPLICATIONS.filter(a => a.payment_status === 'paid' || a.payment_status === 'Confirmed').length,
       })
       setLoading(false)
-    })()
+    }, 600)
+
+    return () => clearTimeout(timer)
   }, [])
 
   // ── Filtered + sorted list (client-side) ──────────────────────────────────
@@ -217,9 +259,8 @@ export default function AdminDashboardPage() {
   const hasFilters = search || filterApp || filterPay || filterExam
   const clearFilters = () => { setSearch(''); setFilterApp(''); setFilterPay(''); setFilterExam('') }
 
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+  const handleSignOut = () => {
+    console.log('[v0] Mock: Admin signing out')
     router.push('/admin/login')
   }
 
@@ -430,7 +471,7 @@ export default function AdminDashboardPage() {
                           <span className="font-medium text-slate-800 text-sm">{app.prenom} {app.nom}</span>
                           {app.is_scholarship_eligible && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300">
-                              ⭐ Bourse
+                              Bourse
                             </span>
                           )}
                         </div>
@@ -447,17 +488,16 @@ export default function AdminDashboardPage() {
                       <td className="px-4 py-3.5 hidden lg:table-cell">
                         <span className="text-xs text-slate-400">
                           {new Date(app.created_at).toLocaleDateString('fr-FR', {
-                            day: 'numeric', month: 'short', year: 'numeric',
+                            day: '2-digit', month: 'short', year: 'numeric',
                           })}
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
                         <Link
-                          href={`/admin/applications/${app.applicant_id}`}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-[#4EA6F5] hover:text-[#021463] transition-colors"
+                          href={`/admin/applications/${encodeURIComponent(app.applicant_id)}`}
+                          className="inline-flex items-center gap-1 text-xs text-[#4EA6F5] hover:text-[#021463] font-medium transition-colors"
                         >
-                          Voir
-                          <ExternalLink className="w-3 h-3" />
+                          Voir <ExternalLink className="w-3 h-3" />
                         </Link>
                       </td>
                     </tr>
@@ -467,9 +507,12 @@ export default function AdminDashboardPage() {
             </div>
           )}
         </div>
-
-        <p className="text-center text-xs text-slate-300 pt-4">© 2026 Ignito Academy. Tous droits réservés.</p>
       </main>
+
+      {/* Footer */}
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center">
+        <p className="text-xs text-slate-300">© 2026 Ignito Academy. Tous droits réservés.</p>
+      </footer>
     </div>
   )
 }

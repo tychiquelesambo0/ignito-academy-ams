@@ -295,29 +295,29 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              <div className="bg-white p-8 rounded-lg border border-border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                  <CheckCircle2 className="w-8 h-8 text-primary" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto">
+              <div className="bg-white p-4 sm:p-8 rounded-lg border border-border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 sm:mb-6">
+                  <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                 </div>
-                <h3 className="font-bold text-xl mb-3">{t('landing.foundation.benefit1_title')}</h3>
-                <p className="text-muted-foreground">{t('landing.foundation.benefit1_desc')}</p>
+                <h3 className="font-bold text-lg sm:text-xl mb-2 sm:mb-3">{t('landing.foundation.benefit1_title')}</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">{t('landing.foundation.benefit1_desc')}</p>
               </div>
               
-              <div className="bg-white p-8 rounded-lg border border-border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                  <GraduationCap className="w-8 h-8 text-primary" />
+              <div className="bg-white p-4 sm:p-8 rounded-lg border border-border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 sm:mb-6">
+                  <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                 </div>
-                <h3 className="font-bold text-xl mb-3">{t('landing.foundation.benefit2_title')}</h3>
-                <p className="text-muted-foreground">{t('landing.foundation.benefit2_desc')}</p>
+                <h3 className="font-bold text-lg sm:text-xl mb-2 sm:mb-3">{t('landing.foundation.benefit2_title')}</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">{t('landing.foundation.benefit2_desc')}</p>
               </div>
               
-              <div className="bg-white p-8 rounded-lg border border-border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                  <Clock className="w-8 h-8 text-primary" />
+              <div className="bg-white p-4 sm:p-8 rounded-lg border border-border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25 sm:col-span-2 md:col-span-1">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 sm:mb-6">
+                  <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                 </div>
-                <h3 className="font-bold text-xl mb-3">{t('landing.foundation.benefit3_title')}</h3>
-                <p className="text-muted-foreground">{t('landing.foundation.benefit3_desc')}</p>
+                <h3 className="font-bold text-lg sm:text-xl mb-2 sm:mb-3">{t('landing.foundation.benefit3_title')}</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">{t('landing.foundation.benefit3_desc')}</p>
               </div>
             </div>
           </div>
@@ -381,7 +381,7 @@ export default function Home() {
               </div>
               
               <div className="text-center mt-8">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground min-h-[56px] px-8">
+                <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground min-h-[56px] px-8">
                   {t('landing.curriculum.download_cta')}
                 </Button>
               </div>
@@ -458,10 +458,10 @@ export default function Home() {
             </div>
 
             {/* CTA */}
-            <div className="text-center space-y-3">
+              <div className="text-center space-y-3">
               <Button
                 onClick={handleApplyClick}
-                className="min-h-[52px] px-8 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-md text-base transition-all shadow-lg shadow-amber-500/30"
+                className="w-full sm:w-auto min-h-[52px] px-8 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-md text-base transition-all shadow-lg shadow-amber-500/30"
               >
                 {t('landing.scholarship.cta')}
               </Button>
@@ -483,8 +483,8 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-              <div className="bg-white p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 max-w-6xl mx-auto">
+              <div className="bg-white p-4 sm:p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Award className="w-7 h-7 text-primary" />
                 </div>
@@ -492,7 +492,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">{t('landing.why_choose.benefit1_desc')}</p>
               </div>
               
-              <div className="bg-white p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
+              <div className="bg-white p-4 sm:p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Globe className="w-7 h-7 text-primary" />
                 </div>
@@ -500,7 +500,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">{t('landing.why_choose.benefit2_desc')}</p>
               </div>
               
-              <div className="bg-white p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
+              <div className="bg-white p-4 sm:p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <BookOpen className="w-7 h-7 text-primary" />
                 </div>
@@ -508,7 +508,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">{t('landing.why_choose.benefit3_desc')}</p>
               </div>
               
-              <div className="bg-white p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
+              <div className="bg-white p-4 sm:p-6 rounded-lg border border-border text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/25">
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Users className="w-7 h-7 text-primary" />
                 </div>
@@ -542,8 +542,8 @@ export default function Home() {
               <p className="text-lg md:text-xl font-normal text-[#021463] mb-10 max-w-2xl mx-auto leading-relaxed">
                 {t('landing.final_cta.subtitle')}
               </p>
-              <Link href="/apply">
-                <Button size="lg" className="bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[56px] px-12 text-lg font-semibold rounded-md shadow-lg shadow-[#021463]/30">
+              <Link href="/apply" className="block w-full sm:w-auto sm:inline-block">
+                <Button size="lg" className="w-full sm:w-auto bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[56px] px-8 sm:px-12 text-lg font-semibold rounded-md shadow-lg shadow-[#021463]/30">
                   {t('landing.final_cta.cta')}
                 </Button>
               </Link>

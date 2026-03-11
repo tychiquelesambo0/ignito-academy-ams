@@ -101,11 +101,11 @@ export function ApplicationStatusTracker({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* Official ID card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-[#4EA6F5] p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-[#4EA6F5] p-4 sm:p-5">
           <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mb-1.5">
             Identifiant de candidature
           </p>
-          <p className="font-mono text-2xl font-bold text-[#021463] tracking-wide leading-none">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#021463] tracking-wide leading-none break-all">
             {applicantId}
           </p>
           <p className="text-[11px] text-slate-400 mt-2">
@@ -114,22 +114,22 @@ export function ApplicationStatusTracker({
         </div>
 
         {/* Status badge card */}
-        <div className={`rounded-xl border p-5 flex items-center gap-4 ${badge.classes}`}>
+        <div className={`rounded-xl border p-4 sm:p-5 flex items-center gap-3 sm:gap-4 ${badge.classes}`}>
           <div className="w-10 h-10 rounded-lg bg-white/60 flex items-center justify-center flex-shrink-0">
             <BadgeIcon className="w-5 h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-widest opacity-70 mb-1">
               Statut actuel
             </p>
-            <p className="font-serif text-lg font-bold leading-tight">{badge.label}</p>
+            <p className="font-serif text-base sm:text-lg font-bold leading-tight">{badge.label}</p>
           </div>
         </div>
       </div>
 
       {/* ── 3-step visual stepper ── */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-5">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-4 sm:mb-5">
           Progression du dossier
         </p>
 

@@ -16,7 +16,7 @@ interface UploadedDocument {
 }
 
 interface DocumentUploadProps {
-  paymentStatus: 'Pending' | 'Confirmed' | 'paid' | 'Failed'
+  paymentStatus: string
   applicantId: string
   uploadedDocuments?: UploadedDocument[]
   onUploadSuccess?: () => void
@@ -55,6 +55,7 @@ function DocumentSlot({
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Mock file upload handler - simulates network call
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -65,14 +66,12 @@ function DocumentSlot({
 
     setIsUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('applicantId', applicantId)
-      formData.append('documentType', type)
-      const res = await fetch('/api/documents/upload', { method: 'POST', body: formData })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Erreur lors du téléchargement.')
-      else onSuccess()
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Mock success - call the success callback
+      console.log('[v0] Mock upload:', { file: file.name, type, applicantId })
+      onSuccess()
     } catch {
       setError('Erreur réseau. Veuillez réessayer.')
     } finally {
@@ -81,22 +80,18 @@ function DocumentSlot({
     }
   }
 
+  // Mock delete handler - simulates network call
   const handleDelete = async () => {
     if (!existingDoc) return
     setIsDeleting(true)
     setError(null)
     try {
-      const res = await fetch('/api/documents/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: existingDoc.id }),
-      })
-      if (!res.ok) {
-        const json = await res.json()
-        setError(json.error || 'Erreur lors de la suppression.')
-      } else {
-        onSuccess()
-      }
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      // Mock success
+      console.log('[v0] Mock delete:', { documentId: existingDoc.id })
+      onSuccess()
     } catch {
       setError('Erreur réseau. Veuillez réessayer.')
     } finally {
@@ -111,7 +106,7 @@ function DocumentSlot({
         <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
         <div className="min-w-0">
           {!compact && <p className="text-sm font-semibold text-[#021463]">{title}</p>}
-          <p className="text-xs text-slate-500 truncate max-w-[260px]">{existingDoc.file_name}</p>
+          <p className="text-xs text-slate-500 truncate max-w-[200px] sm:max-w-[260px]">{existingDoc.file_name}</p>
           <p className="text-xs text-slate-400">
             {(existingDoc.file_size_bytes / 1048576).toFixed(2)} Mo &middot;{' '}
             {new Date(existingDoc.uploaded_at).toLocaleDateString('fr-FR', {
@@ -141,12 +136,12 @@ function DocumentSlot({
     return (
       <div>
         <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileChange} />
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
           <div className="flex items-start gap-2.5 min-w-0">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
               {!compact && <p className="text-sm font-semibold text-[#021463]">{title}</p>}
-              <p className="text-xs text-slate-500 truncate max-w-[220px]">{existingDoc.file_name}</p>
+              <p className="text-xs text-slate-500 truncate max-w-[180px] sm:max-w-[220px]">{existingDoc.file_name}</p>
               <p className="text-xs text-slate-400">
                 {(existingDoc.file_size_bytes / 1048576).toFixed(2)} Mo &middot;{' '}
                 {new Date(existingDoc.uploaded_at).toLocaleDateString('fr-FR', {
@@ -155,21 +150,21 @@ function DocumentSlot({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 ml-6 sm:ml-0">
             <button
               onClick={() => inputRef.current?.click()}
               disabled={isUploading || isDeleting}
-              className="text-xs text-[#4EA6F5] border border-[#4EA6F5] rounded px-2 py-1 hover:bg-blue-50 transition-colors disabled:opacity-50"
+              className="text-xs text-[#4EA6F5] border border-[#4EA6F5] rounded px-3 py-2 min-h-[44px] hover:bg-blue-50 transition-colors disabled:opacity-50"
             >
               Remplacer
             </button>
             <button
               onClick={handleDelete}
               disabled={isDeleting || isUploading}
-              className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+              className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               aria-label="Supprimer"
             >
-              {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -182,7 +177,7 @@ function DocumentSlot({
   return (
     <div>
       <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileChange} />
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
         <div className="flex items-start gap-2.5">
           <div className="w-4 h-4 mt-0.5 rounded-full border-2 border-slate-300 flex-shrink-0" />
           <div>
@@ -193,11 +188,11 @@ function DocumentSlot({
         <button
           onClick={() => inputRef.current?.click()}
           disabled={isUploading}
-          className="flex items-center gap-1.5 flex-shrink-0 text-xs font-medium text-[#4EA6F5] border border-[#4EA6F5] rounded px-2.5 py-1.5 hover:bg-blue-50 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 flex-shrink-0 text-xs font-medium text-[#4EA6F5] border border-[#4EA6F5] rounded px-4 py-2 min-h-[48px] hover:bg-blue-50 transition-colors disabled:opacity-50 ml-6 sm:ml-0 w-fit"
         >
           {isUploading
-            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Envoi…</>
-            : <><Upload className="w-3.5 h-3.5" />Télécharger</>}
+            ? <><Loader2 className="w-4 h-4 animate-spin" />Envoi…</>
+            : <><Upload className="w-4 h-4" />Télécharger</>}
         </button>
       </div>
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
@@ -215,23 +210,18 @@ interface CondDocRowProps {
 
 function ConditionalDocRow({ doc, onSuccess, locked }: CondDocRowProps) {
   const [isDeleting, setIsDeleting] = useState(false)
-  const [error, setError]           = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
+  // Mock delete handler
   const handleDelete = async () => {
     setIsDeleting(true)
     setError(null)
     try {
-      const res = await fetch('/api/documents/delete', {
-        method:  'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ documentId: doc.id }),
-      })
-      if (!res.ok) {
-        const json = await res.json()
-        setError(json.error || 'Erreur lors de la suppression.')
-      } else {
-        onSuccess()
-      }
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      console.log('[v0] Mock delete conditional doc:', { documentId: doc.id })
+      onSuccess()
     } catch {
       setError('Erreur réseau. Veuillez réessayer.')
     } finally {
@@ -241,11 +231,11 @@ function ConditionalDocRow({ doc, onSuccess, locked }: CondDocRowProps) {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
         <div className="flex items-start gap-2.5 min-w-0">
           <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs text-slate-700 font-medium truncate max-w-[260px]">{doc.file_name}</p>
+            <p className="text-xs text-slate-700 font-medium truncate max-w-[200px] sm:max-w-[260px]">{doc.file_name}</p>
             <p className="text-xs text-slate-400">
               {(doc.file_size_bytes / 1048576).toFixed(2)} Mo &middot;{' '}
               {new Date(doc.uploaded_at).toLocaleDateString('fr-FR', {
@@ -258,10 +248,10 @@ function ConditionalDocRow({ doc, onSuccess, locked }: CondDocRowProps) {
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 flex-shrink-0"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 flex-shrink-0 ml-6 sm:ml-0"
             aria-label="Supprimer"
           >
-            {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
           </button>
         )}
       </div>
@@ -297,16 +287,16 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
 
       {/* Locked banner — only shown when locked by payment (not when conditionally unlocked) */}
       {locked && !isConditional && (
-        <div className="flex items-center gap-2.5 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-          <Lock className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <p className="text-xs text-emerald-800 font-medium">
+        <div className="flex items-start gap-2.5 px-3 py-3 sm:px-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <Lock className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-emerald-800 font-medium leading-relaxed">
             Documents verrouillés — Votre paiement a été confirmé. Les fichiers ne peuvent plus être modifiés.
           </p>
         </div>
       )}
 
       {/* Card 1 – Identity */}
-      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-5 ${locked ? 'opacity-80' : ''}`}>
+      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5 ${locked ? 'opacity-80' : ''}`}>
         <div className="flex items-center gap-2 mb-1">
           <FileText className="w-4 h-4 text-[#4EA6F5]" />
           <h4 className="text-sm font-bold text-[#021463]">Preuve d&apos;Identité</h4>
@@ -316,8 +306,8 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
       </div>
 
       {/* Card 2 – Diploma (conditionally optional) */}
-      <div className={`bg-white rounded-xl shadow-sm border p-5 ${locked ? 'opacity-80' : ''} ${diplomaOptional ? 'border-slate-200' : 'border-slate-200'}`}>
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
+      <div className={`bg-white rounded-xl shadow-sm border p-4 sm:p-5 ${locked ? 'opacity-80' : ''} ${diplomaOptional ? 'border-slate-200' : 'border-slate-200'}`}>
+        <div className="flex flex-wrap items-center gap-2 mb-1">
           <FileText className="w-4 h-4 text-[#4EA6F5]" />
           <h4 className="text-sm font-bold text-[#021463]">Diplôme d&apos;État ou Attestation</h4>
           {diplomaOptional ? (
@@ -330,7 +320,7 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
             </span>
           )}
         </div>
-        <p className="text-xs text-slate-400 mb-4">
+        <p className="text-xs text-slate-400 mb-4 leading-relaxed">
           {diplomaOptional
             ? "Puisque vous êtes en attente de vos résultats, vous pouvez soumettre votre dossier sans ce document. Il vous sera demandé ultérieurement pour votre admission définitive."
             : "Copie officielle de votre diplôme ou attestation de réussite."}
@@ -339,7 +329,7 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
       </div>
 
       {/* Card 3 – Bulletins */}
-      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-5 ${locked ? 'opacity-80' : ''}`}>
+      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5 ${locked ? 'opacity-80' : ''}`}>
         <div className="flex items-center gap-2 mb-1">
           <FileText className="w-4 h-4 text-[#4EA6F5]" />
           <h4 className="text-sm font-bold text-[#021463]">Historique Scolaire (Bulletins)</h4>
@@ -348,20 +338,16 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
         <div className="divide-y divide-slate-100">
           {BULLETIN_ROWS.map(({ type, label }, i) => (
             <div key={type} className={`${i === 0 ? '' : 'pt-3'} ${i < BULLETIN_ROWS.length - 1 ? 'pb-3' : ''}`}>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1.5">
                 <span className="text-xs font-medium text-slate-600">{label}</span>
-                <div className="flex-1 min-w-0 px-3">
-                  {byType(type) && !locked ? (
-                    <p className="text-xs text-emerald-600 truncate flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{byType(type)!.file_name}</span>
-                    </p>
-                  ) : null}
-                </div>
+                {byType(type) && !locked && (
+                  <p className="text-xs text-emerald-600 truncate flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate max-w-[150px] sm:max-w-none">{byType(type)!.file_name}</span>
+                  </p>
+                )}
               </div>
-              <div className="mt-1.5">
-                <DocumentSlot {...slotProps(type)} title={label} description="" compact />
-              </div>
+              <DocumentSlot {...slotProps(type)} title={label} description="" compact />
             </div>
           ))}
         </div>
@@ -369,7 +355,7 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
 
       {/* Card 4 – Additional / conditional documents */}
       {(conditionalDocs.length > 0 || isConditional) && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5">
           <div className="flex items-center gap-2 mb-1">
             <FileText className="w-4 h-4 text-amber-500" />
             <h4 className="text-sm font-bold text-[#021463]">Documents Additionnels</h4>
@@ -400,7 +386,7 @@ export function DocumentUpload({ paymentStatus, applicantId, uploadedDocuments =
       {!locked && (
         <div className="flex items-start gap-2 px-1">
           <AlertCircle className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 leading-relaxed">
             Formats acceptés : PDF, JPG, PNG · Taille max : 5 Mo par fichier.
             Le paiement sera débloqué une fois tous les documents reçus.
           </p>

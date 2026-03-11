@@ -1,33 +1,52 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useEffect, useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import dynamicImport from 'next/dynamic'
-import { createClient } from '@/lib/supabase/client'
 import { ApplicationStatusTracker } from '@/components/ApplicationStatusTracker'
 import { DocumentUpload } from '@/components/DocumentUpload'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { handleLogout, handleNewApplication } from './actions'
 import { AlertTriangle, Loader2, Paperclip, CheckCircle2, X, Star, Play } from 'lucide-react'
-import { useRef } from 'react'
-import type { DecisionStatus } from '@/components/pdf/DecisionLetterPDF'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
 
-// Lazy-load the PDF button to avoid SSR — @react-pdf/renderer is client-only
-const PDFDownloadButton = dynamicImport(
-  () => import('@/components/pdf/PDFDownloadButton').then(m => m.PDFDownloadButton),
-  { ssr: false, loading: () => (
-    <span className="inline-flex items-center gap-2 px-5 min-h-[48px] rounded-md text-sm font-semibold bg-slate-100 text-slate-400 cursor-wait">
-      <Loader2 className="w-4 h-4 animate-spin" />Chargement…
-    </span>
-  )}
-)
+// ─── MOCK DATA ───────────────────────────────────────────────────────────────
+// This is hardcoded mock data for frontend development.
+// A backend engineer will wire this up to a real API later.
 
+const MOCK_APPLICANT = {
+  prenom: 'Jean',
+  nom: 'Kabila',
+  email: 'jean.kabila@example.com',
+  date_naissance: '2005-03-15',
+}
+
+const MOCK_APPLICATIONS = [
+  {
+    id: '1',
+    applicant_id: 'APP-2026-001234',
+    user_id: 'user-123',
+    intake_year: 2026,
+    created_at: '2026-01-15T10:30:00Z',
+    application_status: 'en_cours_devaluation', // Options: 'en_attente', 'en_cours_devaluation', 'Admission définitive', 'Admission sous réserve', 'Dossier refusé'
+    payment_status: 'paid', // Options: 'pending', 'paid', 'waived', 'Confirmed'
+    ecole_provenance: 'Lycée Prince de Liège',
+    option_academique: 'Math-Physique',
+    exam_status: 'En attente de l\'Examen d\'État',
+    is_scholarship_eligible: true,
+    scholarship_status: null, // Options: null, 'submitted'
+    scholarship_video_url: null,
+    conditional_message: null,
+    uploadedDocuments: [
+      { id: '1', file_name: 'carte_identite.pdf', file_size_bytes: 524288, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:00:00Z', file_path: '/docs/id.pdf', document_type: 'identification' },
+      { id: '2', file_name: 'bulletin_10eme.pdf', file_size_bytes: 1048576, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:05:00Z', file_path: '/docs/b10.pdf', document_type: 'bulletin_10' },
+      { id: '3', file_name: 'bulletin_11eme.pdf', file_size_bytes: 1048576, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:10:00Z', file_path: '/docs/b11.pdf', document_type: 'bulletin_11' },
+    ],
+  },
+]
+
+type DecisionStatus = 'Admission définitive' | 'Admission sous réserve' | 'Dossier refusé'
 const DECISION_STATUSES: DecisionStatus[] = [
   'Admission définitive',
   'Admission sous réserve',
@@ -36,87 +55,124 @@ const DECISION_STATUSES: DecisionStatus[] = [
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [applicationsWithDocs, setApplicationsWithDocs] = useState<any[]>([])
-  const [applicant, setApplicant] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  
+  // ─── Local state (mock data driven) ────────────────────────────────────────
+  const [applicant] = useState(MOCK_APPLICANT)
+  const [applicationsWithDocs, setApplicationsWithDocs] = useState(MOCK_APPLICATIONS)
+  const [loading] = useState(false)
+  
   const [resubmitting, setResubmitting] = useState<string | null>(null)
   const [resubmitToast, setResubmitToast] = useState<string | null>(null)
+  
   // Scholarship video modal state
   const [scholarshipModal, setScholarshipModal] = useState(false)
-  const [videoUrl,   setVideoUrl]   = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [videoError, setVideoError] = useState<string | null>(null)
   const [videoSaving, setVideoSaving] = useState(false)
-  // Conditional upload state keyed by applicant_id
-  const [condFile, setCondFile]       = useState<File | null>(null)
+  
+  // Conditional upload state
+  const [condFile, setCondFile] = useState<File | null>(null)
   const [condUploading, setCondUploading] = useState(false)
   const [condUploadError, setCondUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const fetchData = async () => {
-    const supabase = createClient()
-
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      await supabase.auth.signOut()
-      router.push('/apply')
-      return
-    }
-
-    // Fetch user's applications
-    const { data: applications, error: appsError } = await supabase
-      .from('applications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (appsError) {
-      console.error('Error fetching applications:', appsError)
-    }
-
-    // Fetch uploaded documents for each application
-    const appsWithDocs = await Promise.all(
-      (applications || []).map(async (app) => {
-        const { data: docs } = await supabase
-          .from('uploaded_documents')
-          .select('id, file_name, file_size_bytes, mime_type, uploaded_at, file_path, document_type')
-          .eq('applicant_id', app.applicant_id)
-          .order('uploaded_at', { ascending: false })
-        
-        return {
-          ...app,
-          uploadedDocuments: docs || []
-        }
-      })
-    )
-
-    setApplicationsWithDocs(appsWithDocs)
-
-    // Get applicant profile — if missing, the account was deleted; sign out
-    const { data: applicantData, error: profileError } = await supabase
-      .from('applicants')
-      .select('prenom, nom, email, date_naissance')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !applicantData) {
-      await supabase.auth.signOut()
-      router.push('/apply')
-      return
-    }
-
-    setApplicant(applicantData)
-    setLoading(false)
+  // ─── Mock handlers (simulate backend calls) ────────────────────────────────
+  
+  const handleLogout = () => {
+    // Mock logout - just redirect
+    router.push('/apply')
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  const handleNewApplication = () => {
+    // Mock new application
+    router.push('/apply')
+  }
+
+  const handleConditionalUploadAndSubmit = async (applicantId: string) => {
+    if (!condFile) return
+    setCondUploading(true)
+    setCondUploadError(null)
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // Mock success
+    setCondFile(null)
+    setResubmitToast('Documents soumis avec succès. Votre dossier est de nouveau en cours d\'évaluation.')
+    
+    // Update mock state
+    setApplicationsWithDocs(prev => prev.map(app => 
+      app.applicant_id === applicantId 
+        ? { ...app, application_status: 'en_cours_devaluation' }
+        : app
+    ))
+    
+    setCondUploading(false)
+    setTimeout(() => setResubmitToast(null), 5000)
+  }
+
+  const handleResubmit = async (applicantId: string) => {
+    setResubmitting(applicantId)
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    setResubmitToast('Documents soumis avec succès. Votre dossier est de nouveau en cours d\'évaluation.')
+    setResubmitting(null)
+    setTimeout(() => setResubmitToast(null), 5000)
+  }
+
+  const handleVideoSubmit = async () => {
+    setVideoError(null)
+    const trimmed = videoUrl.trim()
+    if (!trimmed) { setVideoError('Veuillez saisir une URL.'); return }
+
+    const isYouTube = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(trimmed)
+    const isDrive = /^https?:\/\/(drive|docs)\.google\.com\//.test(trimmed)
+    if (!isYouTube && !isDrive) {
+      setVideoError('URL invalide. Utilisez un lien YouTube (youtube.com / youtu.be) ou Google Drive (drive.google.com).')
+      return
+    }
+
+    setVideoSaving(true)
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // Update mock state
+    setApplicationsWithDocs(prev => prev.map(app => ({
+      ...app,
+      scholarship_video_url: trimmed,
+      scholarship_status: 'submitted',
+    })))
+
+    setScholarshipModal(false)
+    setVideoUrl('')
+    setVideoSaving(false)
+  }
+
+  // Mock document upload refresh
+  const refreshData = () => {
+    // In real app, this would refetch from backend
+    console.log('[v0] Mock refresh triggered')
+  }
+
+  // Check re-apply eligibility
+  const currentYear = new Date().getFullYear()
+  const hasCompletedPreviousApplication = applicationsWithDocs?.some(
+    app => app.intake_year < currentYear && 
+    (app.application_status === 'Admission définitive' || 
+     app.application_status === 'Dossier refusé' ||
+     app.application_status === 'Admission sous réserve')
+  )
+  const hasCurrentYearApplication = applicationsWithDocs?.some(
+    app => app.intake_year === currentYear
+  )
+  const canReapply = hasCompletedPreviousApplication && !hasCurrentYearApplication
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#021463] mx-auto mb-4" />
           <p className="text-slate-500 text-sm">Chargement de votre espace…</p>
@@ -125,140 +181,17 @@ export default function DashboardPage() {
     )
   }
 
-  const handleConditionalUploadAndSubmit = async (applicantId: string) => {
-    if (!condFile) return
-    setCondUploading(true)
-    setCondUploadError(null)
-
-    try {
-      // 1. Upload the conditional document
-      const form = new FormData()
-      form.append('file', condFile)
-      form.append('applicantId', applicantId)
-      form.append('documentType', 'document_conditionnel')
-
-      const uploadRes = await fetch('/api/documents/upload', { method: 'POST', body: form })
-      const uploadData = await uploadRes.json()
-
-      if (!uploadRes.ok) {
-        setCondUploadError(uploadData?.error ?? 'Erreur lors du téléchargement.')
-        setCondUploading(false)
-        return
-      }
-
-      // 2. Resubmit the application
-      const submitRes = await fetch('/api/applications/resubmit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ applicant_id: applicantId }),
-      })
-      const submitData = await submitRes.json()
-
-      if (!submitRes.ok) {
-        setCondUploadError(submitData?.error ?? 'Erreur lors de la soumission.')
-        setCondUploading(false)
-        return
-      }
-
-      // 3. Success
-      setCondFile(null)
-      setResubmitToast('Documents soumis avec succès. Votre dossier est de nouveau en cours d\'évaluation.')
-      await fetchData()
-    } catch {
-      setCondUploadError('Une erreur réseau est survenue. Veuillez réessayer.')
-    } finally {
-      setCondUploading(false)
-      setTimeout(() => setResubmitToast(null), 5000)
-    }
-  }
-
-  const handleResubmit = async (applicantId: string) => {
-    setResubmitting(applicantId)
-    try {
-      const res = await fetch('/api/applications/resubmit', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ applicant_id: applicantId }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setResubmitToast(data?.error ?? 'Une erreur est survenue.')
-      } else {
-        setResubmitToast('Documents soumis avec succès. Votre dossier est de nouveau en cours d\'évaluation.')
-        await fetchData()
-      }
-    } catch {
-      setResubmitToast('Une erreur réseau est survenue.')
-    } finally {
-      setResubmitting(null)
-      setTimeout(() => setResubmitToast(null), 5000)
-    }
-  }
-
-  // ── Scholarship video submission ────────────────────────────────────────────
-  const handleVideoSubmit = async () => {
-    setVideoError(null)
-    const trimmed = videoUrl.trim()
-    if (!trimmed) { setVideoError('Veuillez saisir une URL.'); return }
-
-    const isYouTube = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(trimmed)
-    const isDrive   = /^https?:\/\/(drive|docs)\.google\.com\//.test(trimmed)
-    if (!isYouTube && !isDrive) {
-      setVideoError('URL invalide. Utilisez un lien YouTube (youtube.com / youtu.be) ou Google Drive (drive.google.com).')
-      return
-    }
-
-    setVideoSaving(true)
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setVideoError('Session expirée. Veuillez vous reconnecter.'); return }
-
-      // Cast to any: Supabase types don't yet include scholarship columns
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from('applications')
-        .update({ scholarship_video_url: trimmed, scholarship_status: 'submitted' })
-        .eq('user_id', user.id)
-      if (error) { setVideoError('Erreur lors de la sauvegarde. Veuillez réessayer.'); return }
-
-      setScholarshipModal(false)
-      setVideoUrl('')
-      await fetchData()
-    } finally {
-      setVideoSaving(false)
-    }
-  }
-
-  // REQUIRED_DOC_TYPES is computed per-application inside the map below (depends on exam_status)
-
-  // Check if user has completed applications from previous years
-  const currentYear = new Date().getFullYear()
-  const hasCompletedPreviousApplication = applicationsWithDocs?.some(
-    app => app.intake_year < currentYear && 
-    (app.application_status === 'Admission définitive' || 
-     app.application_status === 'Dossier refusé' ||
-     app.application_status === 'Admission sous réserve')
-  )
-
-  // Check if user already has an application for current year
-  const hasCurrentYearApplication = applicationsWithDocs?.some(
-    app => app.intake_year === currentYear
-  )
-
-  const canReapply = hasCompletedPreviousApplication && !hasCurrentYearApplication
-
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
 
       {/* ── Admitta Navbar ── */}
       <header className="bg-[#021463] sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <span className="font-serif text-2xl font-bold text-white tracking-tight">Admitta</span>
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+          <span className="font-serif text-xl md:text-2xl font-bold text-white tracking-tight">Admitta</span>
           <Button
-            onClick={() => handleLogout()}
+            onClick={handleLogout}
             variant="ghost"
-            className="text-white/65 hover:text-white hover:bg-white/10 text-sm font-medium min-h-[40px] px-4"
+            className="text-white/65 hover:text-white hover:bg-white/10 text-sm font-medium min-h-[48px] px-4"
           >
             Se déconnecter
           </Button>
@@ -267,17 +200,17 @@ export default function DashboardPage() {
 
       {/* ── Toast ── */}
       {resubmitToast && (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium max-w-md text-center transition-all
+        <div className={`fixed bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:max-w-md z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-center transition-all
           ${resubmitToast.includes('succès') ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
           {resubmitToast}
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-12 space-y-8">
+      <main className="max-w-4xl mx-auto px-4 py-6 md:py-10 space-y-6">
 
         {/* ── Greeting + ID row ── */}
         <div>
-          <h1 className="font-serif text-3xl font-bold text-[#021463] mb-1">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#021463] mb-1">
             Bienvenue, {applicant?.prenom} {applicant?.nom}
           </h1>
           <p className="text-slate-500 text-sm">
@@ -286,15 +219,16 @@ export default function DashboardPage() {
         </div>
 
         {canReapply && (
-          <form action={handleNewApplication}>
-            <Button type="submit" className="bg-[#4EA6F5] hover:bg-[#4EA6F5]/90 text-white min-h-[48px] px-6 font-semibold rounded-md">
-              Nouvelle candidature
-            </Button>
-          </form>
+          <Button 
+            onClick={handleNewApplication}
+            className="bg-[#4EA6F5] hover:bg-[#4EA6F5]/90 text-white min-h-[48px] px-6 font-semibold rounded-md w-full sm:w-auto"
+          >
+            Nouvelle candidature
+          </Button>
         )}
 
         {/* ── Applications ── */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           {applicationsWithDocs && applicationsWithDocs.length > 0 ? (
             applicationsWithDocs.map((application) => {
               const diplomaRequired = application.exam_status === 'Diplôme obtenu'
@@ -306,7 +240,7 @@ export default function DashboardPage() {
                 ...(diplomaRequired ? ['diploma'] : []),
               ]
               return (
-              <div key={application.id} className="space-y-5">
+              <div key={application.id} className="space-y-4">
 
                 {/* Meta row */}
                 <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
@@ -324,67 +258,66 @@ export default function DashboardPage() {
 
                 {/* ── Decision Letter Download ── */}
                 {DECISION_STATUSES.includes(application.application_status as DecisionStatus) && applicant && (
-                  <div className={`rounded-xl border p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4
+                  <div className={`rounded-xl border p-4 flex flex-col gap-3
                     ${application.application_status === 'Admission définitive'
                       ? 'bg-[#021463]/5 border-[#021463]/15'
                       : application.application_status === 'Admission sous réserve'
                       ? 'bg-amber-50 border-amber-200'
                       : 'bg-slate-50 border-slate-200'}`}
                   >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
-                      ${application.application_status === 'Admission définitive'
-                        ? 'bg-[#021463]/10'
-                        : application.application_status === 'Admission sous réserve'
-                        ? 'bg-amber-100'
-                        : 'bg-slate-200'}`}
-                    >
-                      <svg className={`w-5 h-5
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
                         ${application.application_status === 'Admission définitive'
-                          ? 'text-[#021463]'
+                          ? 'bg-[#021463]/10'
                           : application.application_status === 'Admission sous réserve'
-                          ? 'text-amber-700'
-                          : 'text-slate-500'}`}
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round"
-                          d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                      </svg>
+                          ? 'bg-amber-100'
+                          : 'bg-slate-200'}`}
+                      >
+                        <svg className={`w-5 h-5
+                          ${application.application_status === 'Admission définitive'
+                            ? 'text-[#021463]'
+                            : application.application_status === 'Admission sous réserve'
+                            ? 'text-amber-700'
+                            : 'text-slate-500'}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round"
+                            d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-bold mb-0.5
+                          ${application.application_status === 'Admission définitive'
+                            ? 'text-[#021463]'
+                            : application.application_status === 'Admission sous réserve'
+                            ? 'text-amber-900'
+                            : 'text-slate-700'}`}>
+                          Votre lettre de décision officielle est disponible
+                        </p>
+                        <p className={`text-xs leading-relaxed
+                          ${application.application_status === 'Admission définitive'
+                            ? 'text-[#021463]/65'
+                            : application.application_status === 'Admission sous réserve'
+                            ? 'text-amber-700'
+                            : 'text-slate-500'}`}>
+                          Document généré par le Bureau des Admissions
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-bold mb-0.5
-                        ${application.application_status === 'Admission définitive'
-                          ? 'text-[#021463]'
-                          : application.application_status === 'Admission sous réserve'
-                          ? 'text-amber-900'
-                          : 'text-slate-700'}`}>
-                        Votre lettre de décision officielle est disponible
-                      </p>
-                      <p className={`text-xs leading-relaxed
-                        ${application.application_status === 'Admission définitive'
-                          ? 'text-[#021463]/65'
-                          : application.application_status === 'Admission sous réserve'
-                          ? 'text-amber-700'
-                          : 'text-slate-500'}`}>
-                        Document généré par le Bureau des Admissions · Ignito Academy
-                      </p>
-                    </div>
-
-                    <PDFDownloadButton
-                      applicantName={`${applicant.prenom} ${applicant.nom}`}
-                      applicantId={application.applicant_id}
-                      status={application.application_status as DecisionStatus}
-                      conditionalMessage={application.conditional_message}
-                    />
+                    <Button className="w-full sm:w-auto min-h-[48px] bg-[#021463] hover:bg-[#021463]/90 text-white font-semibold rounded-md text-sm">
+                      Télécharger la lettre (PDF)
+                    </Button>
                   </div>
                 )}
 
                 {/* Academic info card */}
                 {application.ecole_provenance && application.option_academique && (
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
                     <h4 className="font-serif text-base font-bold text-[#021463] mb-4">
                       Informations académiques
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 gap-4 text-sm">
                       <div className="space-y-0.5">
                         <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">École</p>
                         <p className="font-medium text-[#1E293B]">{application.ecole_provenance}</p>
@@ -411,10 +344,10 @@ export default function DashboardPage() {
                   application.application_status !== 'Admission sous réserve' &&
                   application.application_status !== 'Admission définitive' &&
                   application.application_status !== 'Dossier refusé' && (
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <p className="text-sm font-medium text-emerald-800">
-                      ✅ Dossier soumis avec succès. Notre équipe d&apos;admission examine actuellement votre profil.
+                      Dossier soumis avec succès. Notre équipe d&apos;admission examine actuellement votre profil.
                     </p>
                   </div>
                 )}
@@ -422,12 +355,12 @@ export default function DashboardPage() {
                 {/* ── Upload prompt (docs still pending) ── */}
                 {(() => {
                   const allDocsUploaded = REQUIRED_DOC_TYPES.every(t =>
-                    application.uploadedDocuments?.some((d: any) => d.document_type === t)
+                    application.uploadedDocuments?.some((d: { document_type: string }) => d.document_type === t)
                   )
                   if (allDocsUploaded) return null
                   if (application.application_status === 'Admission sous réserve') return null
                   return (
-                    <div className="flex items-start gap-3.5 p-4 bg-blue-50 border border-[#021463]/15 rounded-xl">
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 border border-[#021463]/15 rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-[#021463]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <svg className="w-4 h-4 text-[#021463]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
@@ -447,17 +380,17 @@ export default function DashboardPage() {
                 {application.is_scholarship_eligible &&
                   application.application_status === 'en_cours_devaluation' && (
                   <div className="rounded-xl border border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-amber-200 flex items-center gap-3">
+                    <div className="px-4 py-3 border-b border-amber-200 flex items-center gap-3">
                       <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
                       <p className="font-bold text-amber-900 text-sm">
-                        🌟 Éligibilité à la Bourse d&apos;Excellence
+                        Éligibilité à la Bourse d&apos;Excellence
                       </p>
                     </div>
-                    <div className="px-5 py-4 space-y-3">
+                    <div className="px-4 py-4 space-y-3">
                       {application.scholarship_status === 'submitted' ? (
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                          <p className="text-sm font-semibold text-emerald-800">✅ Vidéo soumise — en cours d&apos;évaluation</p>
+                          <p className="text-sm font-semibold text-emerald-800">Vidéo soumise — en cours d&apos;évaluation</p>
                         </div>
                       ) : (
                         <>
@@ -467,7 +400,7 @@ export default function DashboardPage() {
                           </p>
                           <Button
                             onClick={() => { setScholarshipModal(true); setVideoError(null) }}
-                            className="bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[44px] px-5 text-sm font-semibold rounded-md flex items-center gap-2"
+                            className="w-full sm:w-auto bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[48px] px-5 text-sm font-semibold rounded-md flex items-center justify-center gap-2"
                           >
                             <Play className="w-4 h-4" />
                             Soumettre ma candidature à la Bourse
@@ -478,12 +411,12 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* ── Conditional admission: unified single card — shown ABOVE document list ── */}
+                {/* ── Conditional admission: unified single card ── */}
                 {application.application_status === 'Admission sous réserve' && (
                   <div className="border border-amber-400 rounded-xl overflow-hidden">
 
                     {/* Top: admin message */}
-                    <div className="flex items-start gap-3.5 p-5 bg-amber-50 border-b border-amber-200">
+                    <div className="flex items-start gap-3 p-4 bg-amber-50 border-b border-amber-200">
                       <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <AlertTriangle className="w-4 h-4 text-amber-600" />
                       </div>
@@ -500,9 +433,9 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Bottom: upload zone */}
-                    <div className="p-5 bg-amber-50/60 space-y-3">
+                    <div className="p-4 bg-amber-50/60 space-y-3">
                       <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">
-                        Télécharger le document manquant &nbsp;·&nbsp; PDF, JPG ou PNG — max 5 Mo
+                        Télécharger le document manquant · PDF, JPG ou PNG — max 5 Mo
                       </p>
 
                       <input
@@ -521,7 +454,7 @@ export default function DashboardPage() {
                       {!condFile ? (
                         <button
                           onClick={() => fileInputRef.current?.click()}
-                          className="w-full flex items-center justify-center gap-2 h-11 rounded-lg border-2 border-dashed border-amber-300 bg-white text-amber-700 text-sm font-medium hover:border-amber-400 hover:bg-amber-50 transition-colors"
+                          className="w-full flex items-center justify-center gap-2 min-h-[48px] rounded-lg border-2 border-dashed border-amber-300 bg-white text-amber-700 text-sm font-medium hover:border-amber-400 hover:bg-amber-50 transition-colors"
                         >
                           <Paperclip className="w-4 h-4" />
                           Choisir le document requis
@@ -532,7 +465,7 @@ export default function DashboardPage() {
                           <span className="text-sm text-amber-900 font-medium flex-1 truncate">{condFile.name}</span>
                           <button
                             onClick={() => { setCondFile(null); setCondUploadError(null) }}
-                            className="text-amber-400 hover:text-amber-700 transition-colors"
+                            className="text-amber-400 hover:text-amber-700 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                             aria-label="Retirer"
                           >
                             <X className="w-4 h-4" />
@@ -567,7 +500,7 @@ export default function DashboardPage() {
                     paymentStatus={application.payment_status}
                     applicantId={application.applicant_id}
                     uploadedDocuments={application.uploadedDocuments}
-                    onUploadSuccess={fetchData}
+                    onUploadSuccess={refreshData}
                     applicationStatus={application.application_status}
                     examStatus={application.exam_status}
                   />
@@ -576,10 +509,10 @@ export default function DashboardPage() {
               </div>
             )})
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 md:p-12 text-center">
               <p className="text-slate-400 mb-5 text-sm">Vous n&apos;avez pas encore de candidature en cours.</p>
               <Link href="/apply">
-                <Button className="bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[48px] px-8 font-semibold rounded-md">
+                <Button className="w-full sm:w-auto bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[48px] px-8 font-semibold rounded-md">
                   Commencer une candidature
                 </Button>
               </Link>
@@ -592,10 +525,10 @@ export default function DashboardPage() {
 
       {/* ── Scholarship Video Modal ── */}
       <Dialog open={scholarshipModal} onOpenChange={setScholarshipModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-4">
           <DialogHeader>
             <DialogTitle className="font-serif text-[#021463] text-xl">
-              🌟 Soumettre mon essai vidéo
+              Soumettre mon essai vidéo
             </DialogTitle>
             <DialogDescription className="text-slate-500 text-sm leading-relaxed">
               Collez ci-dessous le lien de votre essai vidéo (YouTube non-listé ou Google Drive).
@@ -612,24 +545,24 @@ export default function DashboardPage() {
                 type="url"
                 value={videoUrl}
                 onChange={e => { setVideoUrl(e.target.value); setVideoError(null) }}
-                placeholder="https://youtube.com/watch?v=... ou https://drive.google.com/..."
+                placeholder="https://youtube.com/watch?v=..."
                 className="w-full min-h-[48px] px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EA6F5]/40 focus:border-[#4EA6F5] transition-colors"
               />
               {videoError && <p className="text-xs text-red-500">{videoError}</p>}
             </div>
 
-            <div className="flex gap-3 pt-1">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
               <Button
                 variant="outline"
                 onClick={() => { setScholarshipModal(false); setVideoUrl(''); setVideoError(null) }}
-                className="flex-1 min-h-[48px] rounded-md text-sm"
+                className="flex-1 min-h-[48px] rounded-md text-sm order-2 sm:order-1"
               >
                 Annuler
               </Button>
               <Button
                 onClick={handleVideoSubmit}
                 disabled={videoSaving}
-                className="flex-1 min-h-[48px] bg-[#021463] hover:bg-[#021463]/90 text-white font-semibold rounded-md text-sm"
+                className="flex-1 min-h-[48px] bg-[#021463] hover:bg-[#021463]/90 text-white font-semibold rounded-md text-sm order-1 sm:order-2"
               >
                 {videoSaving
                   ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Envoi…</>

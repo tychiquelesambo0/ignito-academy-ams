@@ -1,8 +1,6 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -13,184 +11,121 @@ import { Label } from '@/components/ui/label'
 import { Eye, EyeOff, ArrowLeft, Award, Globe, Shield, Loader2 } from 'lucide-react'
 import { registrationSchema, type RegistrationFormData } from '@/lib/validations/auth'
 import { loginSchema, type LoginFormData } from '@/lib/validations/login'
-import { createClient } from '@/lib/supabase/client'
 
 // ─── Sign Up Form ────────────────────────────────────────────────────────────
 
 function SignUpForm() {
   const router = useRouter()
-  const supabase = createClient()
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationFormData>({ resolver: zodResolver(registrationSchema) })
-
-  // Mirror password → confirmPassword so Zod's equality check always passes
-  const passwordValue = watch('password')
-  useEffect(() => {
-    setValue('confirmPassword', passwordValue ?? '')
-  }, [passwordValue, setValue])
 
   const onSubmit = async (data: RegistrationFormData) => {
     setServerError(null)
 
-    // Check for duplicate email
-    const { data: existingEmail } = await supabase
-        .from('applicants')
-        .select('email')
-        .eq('email', data.email)
-        .single()
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500))
 
-    if (existingEmail) {
+    // Mock validation - check for "existing" email
+    if (data.email === 'existing@example.com') {
       setServerError('Cette adresse email est déjà utilisée. Veuillez vous connecter.')
-        return
-      }
+      return
+    }
 
-    // Check for duplicate phone
-      const { data: existingPhone } = await supabase
-        .from('applicants')
-        .select('phone_number')
-        .eq('phone_number', data.phone_number)
-        .single()
-
-      if (existingPhone) {
-      setServerError('Ce numéro de téléphone est déjà utilisé.')
-        return
-      }
-
-    // Create Supabase auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        phone: data.phone_number,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            full_name: `${data.prenom} ${data.nom}`,
-            phone: data.phone_number,
-          },
-        },
-      })
-
-    if (authError || !authData.user) {
-      setServerError(authError?.message ?? "Erreur lors de la création du compte.")
-        return
-      }
-
-      // Complete signup via server-side API (uses service role — works before email confirmation)
-      const res = await fetch('/api/auth/complete-signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: authData.user.id,
-          email: data.email,
-          prenom: data.prenom,
-          nom: data.nom,
-          phone_number: data.phone_number,
-          date_naissance: data.date_naissance,
-        }),
-      })
-
-      const result = await res.json()
-
-      if (!res.ok || !result.applicant_id) {
-        setServerError(result.error ?? 'Erreur lors de la création du dossier.')
-        return
-      }
-
-      router.push(`/apply/confirm-email?email=${encodeURIComponent(data.email)}`)
+    // Mock success - redirect to confirmation page
+    console.log('[v0] Mock signup data:', data)
+    router.push(`/apply/confirm-email?email=${encodeURIComponent(data.email)}`)
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
 
       {serverError && (
-        <div className="p-3.5 bg-[#EF4444]/8 border border-[#EF4444]/20 rounded-md text-[#EF4444] text-sm leading-relaxed">
+        <div className="p-3 bg-[#EF4444]/8 border border-[#EF4444]/20 rounded-md text-[#EF4444] text-sm leading-relaxed">
           {serverError}
-                  </div>
-                )}
+        </div>
+      )}
 
       {/* Prénom + Nom */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="prenom" className="text-sm font-medium text-[#1E293B]">
             Prénom <span className="text-[#EF4444]">*</span>
           </Label>
-                  <Input
-                    id="prenom"
+          <Input
+            id="prenom"
             placeholder="Jean"
-                    {...register('prenom')}
+            {...register('prenom')}
             className="min-h-[48px] border-[#E2E8F0] focus-visible:ring-[#021463]/20 focus-visible:border-[#021463]"
-                  />
+          />
           {errors.prenom && <p className="text-xs text-[#EF4444]">{errors.prenom.message}</p>}
-                </div>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="nom" className="text-sm font-medium text-[#1E293B]">
             Nom <span className="text-[#EF4444]">*</span>
           </Label>
-                  <Input
-                    id="nom"
+          <Input
+            id="nom"
             placeholder="Kabila"
-                    {...register('nom')}
+            {...register('nom')}
             className="min-h-[48px] border-[#E2E8F0] focus-visible:ring-[#021463]/20 focus-visible:border-[#021463]"
-                  />
+          />
           {errors.nom && <p className="text-xs text-[#EF4444]">{errors.nom.message}</p>}
         </div>
-                </div>
+      </div>
 
-                {/* Email */}
+      {/* Email */}
       <div className="space-y-1.5">
         <Label htmlFor="signup-email" className="text-sm font-medium text-[#1E293B]">
           Adresse email <span className="text-[#EF4444]">*</span>
         </Label>
-                  <Input
+        <Input
           id="signup-email"
-                    type="email"
+          type="email"
           placeholder="exemple@email.com"
           autoComplete="email"
-                    {...register('email')}
+          {...register('email')}
           className="min-h-[48px] border-[#E2E8F0] focus-visible:ring-[#021463]/20 focus-visible:border-[#021463]"
-                  />
+        />
         {errors.email && <p className="text-xs text-[#EF4444]">{errors.email.message}</p>}
-                </div>
+      </div>
 
       {/* Téléphone */}
       <div className="space-y-1.5">
         <Label htmlFor="phone_number" className="text-sm font-medium text-[#1E293B]">
           Téléphone <span className="text-[#EF4444]">*</span>
         </Label>
-                  <Input
-                    id="phone_number"
+        <Input
+          id="phone_number"
           placeholder="+243XXXXXXXXX"
           autoComplete="tel"
-                    {...register('phone_number')}
+          {...register('phone_number')}
           className="min-h-[48px] border-[#E2E8F0] focus-visible:ring-[#021463]/20 focus-visible:border-[#021463]"
         />
         {errors.phone_number
           ? <p className="text-xs text-[#EF4444]">{errors.phone_number.message}</p>
           : <p className="text-xs text-[#1E293B]/40">Format : +243 suivi de 9 chiffres</p>
         }
-                </div>
+      </div>
 
-                {/* Date de naissance */}
+      {/* Date de naissance */}
       <div className="space-y-1.5">
         <Label htmlFor="date_naissance" className="text-sm font-medium text-[#1E293B]">
           Date de naissance <span className="text-[#EF4444]">*</span>
         </Label>
-                  <Input
-                    id="date_naissance"
-                    type="date"
-                    {...register('date_naissance')}
+        <Input
+          id="date_naissance"
+          type="date"
+          {...register('date_naissance')}
           className="min-h-[48px] border-[#E2E8F0] focus-visible:ring-[#021463]/20 focus-visible:border-[#021463]"
-                  />
+        />
         {errors.date_naissance && <p className="text-xs text-[#EF4444]">{errors.date_naissance.message}</p>}
-                </div>
+      </div>
 
       {/* Mot de passe */}
       <div className="space-y-1.5">
@@ -198,21 +133,21 @@ function SignUpForm() {
           Mot de passe <span className="text-[#EF4444]">*</span>
         </Label>
         <div className="relative">
-                  <Input
+          <Input
             id="signup-password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Minimum 6 caractères"
             autoComplete="new-password"
-                    {...register('password')}
+            {...register('password')}
             className="min-h-[48px] border-[#E2E8F0] pr-12 focus-visible:ring-[#021463]/20 focus-visible:border-[#021463]"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? 'Masquer' : 'Afficher'}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#1E293B]/35 hover:text-[#1E293B]/65 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1E293B]/35 hover:text-[#1E293B]/65 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
           >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         </div>
         {errors.password && <p className="text-xs text-[#EF4444]">{errors.password.message}</p>}
@@ -244,7 +179,6 @@ function SignUpForm() {
 
 function LoginForm() {
   const router = useRouter()
-  const supabase = createClient()
   const [showPassword, setShowPassword] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -264,37 +198,18 @@ function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setServerError(null)
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    })
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    if (authError || !authData.user) {
-      if (authError?.message?.toLowerCase().includes('email not confirmed')) {
-        setServerError('Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez votre boîte de réception.')
-      } else {
-        setServerError('Email ou mot de passe incorrect. Veuillez réessayer.')
-      }
+    // Mock validation
+    if (data.email !== 'demo@example.com' || data.password !== 'password123') {
+      setServerError('Email ou mot de passe incorrect. Veuillez réessayer.')
       return
     }
 
-    // Check application status to decide redirect
-    const { data: appDetails } = await supabase
-      .from('applications')
-      .select('applicant_id, ecole_provenance, option_academique')
-      .eq('user_id', authData.user.id)
-      .single()
-
-    if (!appDetails) {
-      router.push('/apply/academic-history')
-      return
-    }
-
-    if (!appDetails.ecole_provenance || !appDetails.option_academique) {
-      router.push(`/apply/academic-history?applicant_id=${appDetails.applicant_id}`)
-    } else {
-      router.push('/dashboard')
-    }
+    // Mock success - redirect to dashboard
+    console.log('[v0] Mock login successful')
+    router.push('/dashboard')
   }
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -305,27 +220,24 @@ function LoginForm() {
       return
     }
     setIsResetting(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-      redirectTo: `${window.location.origin}/auth/reset`,
-    })
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
     setIsResetting(false)
-    if (error) {
-      setResetError(`Erreur : ${error.message}`)
-      return
-    }
     setResetSent(true)
   }
 
   // ── Forgot-password view ──────────────────────────────────────────────────
   if (showForgotPassword) {
     return (
-      <div className="space-y-5 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+      <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
 
         {/* Back link */}
         <button
           type="button"
           onClick={() => { setShowForgotPassword(false); setResetSent(false); setResetError(null); setResetEmail('') }}
-          className="flex items-center gap-1.5 text-xs text-[#1E293B]/50 hover:text-[#021463] font-medium transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#1E293B]/50 hover:text-[#021463] font-medium transition-colors min-h-[44px]"
         >
           <ArrowLeft className="w-3 h-3" />
           Retour à la connexion
@@ -352,7 +264,7 @@ function LoginForm() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleResetPassword} className="space-y-5">
+          <form onSubmit={handleResetPassword} className="space-y-4">
             <div>
               <h3 className="font-serif text-xl font-bold text-[#021463] mb-1">
                 Mot de passe oublié
@@ -360,10 +272,10 @@ function LoginForm() {
               <p className="text-xs text-[#1E293B]/55 leading-relaxed">
                 Saisissez l&apos;adresse email liée à votre dossier. Nous vous enverrons un lien pour créer un nouveau mot de passe.
               </p>
-                </div>
+            </div>
 
             {resetError && (
-              <div className="p-3.5 bg-[#EF4444]/8 border border-[#EF4444]/20 rounded-md text-[#EF4444] text-sm">
+              <div className="p-3 bg-[#EF4444]/8 border border-[#EF4444]/20 rounded-md text-[#EF4444] text-sm">
                 {resetError}
               </div>
             )}
@@ -372,7 +284,7 @@ function LoginForm() {
               <Label htmlFor="reset-email" className="text-sm font-medium text-[#1E293B]">
                 Adresse email
               </Label>
-                  <Input
+              <Input
                 id="reset-email"
                 type="email"
                 placeholder="exemple@email.com"
@@ -394,17 +306,17 @@ function LoginForm() {
               }
             </Button>
           </form>
-                  )}
-                </div>
+        )}
+      </div>
     )
   }
 
   // ── Standard login view ───────────────────────────────────────────────────
   return (
-    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
 
       {serverError && (
-        <div className="p-3.5 bg-[#EF4444]/8 border border-[#EF4444]/20 rounded-md text-[#EF4444] text-sm leading-relaxed">
+        <div className="p-3 bg-[#EF4444]/8 border border-[#EF4444]/20 rounded-md text-[#EF4444] text-sm leading-relaxed">
           {serverError}
         </div>
       )}
@@ -452,24 +364,24 @@ function LoginForm() {
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? 'Masquer' : 'Afficher'}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#1E293B]/35 hover:text-[#1E293B]/65 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1E293B]/35 hover:text-[#1E293B]/65 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
           >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         </div>
         {errors.password && <p className="text-xs text-[#EF4444]">{errors.password.message}</p>}
       </div>
 
-                <Button
-                  type="submit"
+      <Button
+        type="submit"
         disabled={isSubmitting}
         className="w-full min-h-[50px] bg-[#4EA6F5] hover:bg-[#4EA6F5]/90 text-white font-semibold rounded-md text-sm mt-2 shadow-sm shadow-[#4EA6F5]/25 transition-all"
-                >
+      >
         {isSubmitting
           ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Connexion en cours…</>
           : 'Connexion'
         }
-                </Button>
+      </Button>
 
       <p className="text-center text-xs text-[#1E293B]/45 pt-1">
         Vous n&apos;avez pas encore de dossier ?{' '}
@@ -477,6 +389,13 @@ function LoginForm() {
           Créer un compte
         </Link>
       </p>
+
+      {/* Demo credentials hint */}
+      <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-500">
+        <p className="font-medium text-slate-600 mb-1">Compte de démonstration :</p>
+        <p>Email: demo@example.com</p>
+        <p>Mot de passe: password123</p>
+      </div>
     </form>
   )
 }
@@ -489,12 +408,12 @@ function AdmittaGateway() {
   const [activeTab, setActiveTab] = useState<'dossier' | 'connexion'>(defaultTab as 'dossier' | 'connexion')
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
 
-      {/* ── Left Panel (Navy Brand) ── */}
+      {/* ── Left Panel (Navy Brand) — Hidden on mobile ── */}
       <div className="hidden lg:flex lg:w-1/2 hero-gradient flex-col relative overflow-hidden">
 
-        {/* Animated orbs — identical to landing hero */}
+        {/* Animated orbs */}
         <div className="hero-orb-1 absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full opacity-[0.12] pointer-events-none"
           style={{ background: 'radial-gradient(circle, #4EA6F5 0%, transparent 70%)' }} />
         <div className="hero-orb-2 absolute top-1/2 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.10] pointer-events-none"
@@ -502,7 +421,7 @@ function AdmittaGateway() {
         <div className="hero-orb-3 absolute -bottom-20 left-1/3 w-[320px] h-[320px] rounded-full opacity-[0.08] pointer-events-none"
           style={{ background: 'radial-gradient(circle, #7ec8ff 0%, transparent 70%)' }} />
 
-        {/* Subtle dot texture over the gradient */}
+        {/* Subtle dot texture */}
         <div className="absolute inset-0 pointer-events-none">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -514,23 +433,23 @@ function AdmittaGateway() {
           </svg>
         </div>
 
-        <div className="relative z-10 flex flex-col h-full p-12">
+        <div className="relative z-10 flex flex-col h-full p-8 lg:p-12">
 
           {/* Back link */}
           <div>
-            <Link href="/" className="inline-flex items-center gap-2 group">
+            <Link href="/" className="inline-flex items-center gap-2 group min-h-[44px]">
               <ArrowLeft className="w-3.5 h-3.5 text-white/40 group-hover:text-white/70 transition-colors" />
               <span className="text-white/45 text-xs font-medium tracking-widest uppercase group-hover:text-white/70 transition-colors">
                 Retour
               </span>
-                  </Link>
+            </Link>
           </div>
 
           {/* Wordmark */}
           <div className="flex-1 flex flex-col justify-center">
             <div className="space-y-7">
               <div>
-                <h1 className="font-serif text-[88px] font-bold text-white leading-none tracking-tight">
+                <h1 className="font-serif text-6xl lg:text-[88px] font-bold text-white leading-none tracking-tight">
                   Admitta
                 </h1>
                 <div className="flex items-center gap-2.5 mt-5">
@@ -539,7 +458,7 @@ function AdmittaGateway() {
                 </div>
               </div>
 
-              <p className="text-white/60 text-[15px] leading-relaxed font-light">
+              <p className="text-white/60 text-[15px] leading-relaxed font-light max-w-md">
                 Le portail d&apos;admission officiel de{' '}
                 <span className="text-white font-normal">Ignito Academy</span>.
                 {' '}Soumettez votre candidature et accédez à nos licences britanniques depuis la RDC.
@@ -584,11 +503,11 @@ function AdmittaGateway() {
       <div className="w-full lg:w-1/2 flex flex-col bg-white min-h-screen">
 
         {/* Mobile header */}
-        <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <span className="font-serif text-xl font-bold text-[#021463]">Admitta</span>
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-sm text-[#021463]/55 hover:text-[#021463] transition-colors"
+            className="flex items-center gap-1.5 text-sm text-[#021463]/55 hover:text-[#021463] transition-colors min-h-[44px] px-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Retour
@@ -596,11 +515,11 @@ function AdmittaGateway() {
         </div>
 
         {/* Centered auth card */}
-        <div className="flex-1 flex items-center justify-center px-6 py-10 lg:px-16">
+        <div className="flex-1 flex items-center justify-center px-4 py-6 lg:px-16 lg:py-10">
           <div className="w-full max-w-md">
 
-            <div className="mb-8">
-              <h2 className="font-serif text-3xl font-bold text-[#021463] mb-2">
+            <div className="mb-6">
+              <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#021463] mb-2">
                 Bienvenue sur Admitta
               </h2>
               <p className="text-[#1E293B]/55 text-sm leading-relaxed">
@@ -609,11 +528,11 @@ function AdmittaGateway() {
             </div>
 
             {/* ── Tab switcher buttons ── */}
-            <div className="grid grid-cols-2 mb-8 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-1 gap-1">
+            <div className="grid grid-cols-2 mb-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-1 gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab('dossier')}
-                className={`py-2.5 text-sm font-medium rounded-md transition-all duration-150 ${
+                className={`py-3 text-sm font-medium rounded-md transition-all duration-150 min-h-[48px] ${
                   activeTab === 'dossier'
                     ? 'bg-[#021463] text-white shadow-sm'
                     : 'text-[#1E293B]/55 hover:text-[#1E293B]/80'
@@ -624,7 +543,7 @@ function AdmittaGateway() {
               <button
                 type="button"
                 onClick={() => setActiveTab('connexion')}
-                className={`py-2.5 text-sm font-medium rounded-md transition-all duration-150 ${
+                className={`py-3 text-sm font-medium rounded-md transition-all duration-150 min-h-[48px] ${
                   activeTab === 'connexion'
                     ? 'bg-[#021463] text-white shadow-sm'
                     : 'text-[#1E293B]/55 hover:text-[#1E293B]/80'
@@ -634,12 +553,7 @@ function AdmittaGateway() {
               </button>
             </div>
 
-            {/*
-              ── Cross-fade content ──
-              Both forms are always mounted and stacked in the same grid cell
-              ([grid-area:1/1]). The grid height = max of both, so there is zero
-              layout shift. We only transition opacity — exactly like Figma.
-            */}
+            {/* Cross-fade content */}
             <div className="grid">
               <div
                 className="[grid-area:1/1] transition-opacity duration-[120ms] ease-in-out"
@@ -657,7 +571,7 @@ function AdmittaGateway() {
           </div>
         </div>
 
-        <div className="hidden lg:block px-16 pb-6 text-center">
+        <div className="px-4 pb-4 lg:px-16 lg:pb-6 text-center">
           <p className="text-xs text-[#1E293B]/25">
             © 2026 Ignito Academy. Tous droits réservés.
           </p>

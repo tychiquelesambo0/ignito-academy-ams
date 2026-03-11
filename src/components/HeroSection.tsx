@@ -46,7 +46,7 @@ export function HeroSection() {
           {/* Partnership Badge */}
           <div className="mt-12 flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <span>{t('landing.hero.partnership')}</span>
-            <span className="font-semibold text-primary">NCC Education</span>
+            <span className="font-semibold text-primary">Excellence Britannique</span>
           </div>
         </div>
       </div>

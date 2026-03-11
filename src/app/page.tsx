@@ -167,19 +167,19 @@ export default function Home() {
             {/* Logo grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
 
-              {/* Slot 1 — NCC Education */}
+              {/* Slot 1 — Excellence Britannique */}
               <div className="group flex items-center justify-center h-[80px] rounded-lg bg-white/[0.04] border border-white/[0.10] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 px-4">
                 <div className="flex flex-col items-center gap-1.5 opacity-50 group-hover:opacity-80 transition-opacity duration-300">
                   <Award className="w-5 h-5 text-white" />
-                  <span className="text-white text-[11px] font-semibold tracking-wide leading-tight text-center">NCC Education</span>
+                  <span className="text-white text-[11px] font-semibold tracking-wide leading-tight text-center">Excellence Britannique</span>
                 </div>
               </div>
 
-              {/* Slot 2 — Ofqual */}
+              {/* Slot 2 — Cadre RQF */}
               <div className="group flex items-center justify-center h-[80px] rounded-lg bg-white/[0.04] border border-white/[0.10] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 px-4">
                 <div className="flex flex-col items-center gap-1.5 opacity-50 group-hover:opacity-80 transition-opacity duration-300">
                   <GraduationCap className="w-5 h-5 text-white" />
-                  <span className="text-white text-[11px] font-semibold tracking-wide leading-tight text-center">Ofqual</span>
+                  <span className="text-white text-[11px] font-semibold tracking-wide leading-tight text-center">Cadre RQF</span>
                 </div>
               </div>
 

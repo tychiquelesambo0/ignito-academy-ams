@@ -552,8 +552,8 @@ function AdmittaGateway() {
                     <Award className="w-4 h-4 text-[#4EA6F5]" />
                   </div>
                   <div>
-                    <p className="text-white text-sm font-medium leading-tight">NCC Education · Royaume-Uni</p>
-                    <p className="text-white/40 text-xs mt-0.5">Licence accréditée</p>
+                    <p className="text-white text-sm font-medium leading-tight">Excellence Britannique · Cadre RQF</p>
+                    <p className="text-white/40 text-xs mt-0.5">Cursus aligné sur le cadre officiel</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3.5">

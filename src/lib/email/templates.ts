@@ -205,7 +205,7 @@ export function finalAcceptanceEmail(opts: {
       Votre parcours académique a démontré le potentiel nécessaire pour exceller dans le système
       universitaire britannique. Cette offre marque le début de votre parcours continu de 4 ans
       vers l'obtention de votre <strong>Licence Britannique (Bachelor's Degree)</strong>, reconnue
-      internationalement par NCC Education (Royaume-Uni).
+      internationalement dans le cadre du système universitaire britannique (RQF).
     </p>
 
     <p style="margin:0 0 24px;font-size:14px;color:#334155;line-height:1.8;">

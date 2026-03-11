@@ -28,11 +28,11 @@ function SignUpForm() {
   const onSubmit = async (data: RegistrationFormData) => {
     setServerError(null)
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    // Demo mode: Skip email confirmation, go directly to academic history
-    router.push('/apply/academic-history')
+    // TODO: Backend engineer - Replace with actual Supabase auth signup
+    // const { error } = await supabase.auth.signUp({ email: data.email, password: data.password, options: { data: { prenom: data.prenom, nom: data.nom, date_naissance: data.date_naissance } } })
+    // if (error) { setServerError(error.message); return }
+    
+    router.push(`/apply/confirm-email?email=${encodeURIComponent(data.email)}`)
   }
 
   return (
@@ -191,11 +191,10 @@ function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setServerError(null)
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    // Demo mode: Accept any email/password
-    // Just redirect to dashboard
+    // TODO: Backend engineer - Replace with actual Supabase auth signin
+    // const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password })
+    // if (error) { setServerError('Email ou mot de passe incorrect. Veuillez réessayer.'); return }
+    
     router.push('/dashboard')
   }
 
@@ -387,7 +386,7 @@ function LoginForm() {
   )
 }
 
-// ─── Gateway Shell ────────────────────────────────────────────────────────────
+// ─── Gateway Shell ────────────────────────────────────────────��───────────────
 
 function AdmittaGateway() {
   const searchParams = useSearchParams()
@@ -488,22 +487,6 @@ function AdmittaGateway() {
 
       {/* ── Right Panel (Auth) ── */}
       <div className="w-full lg:w-1/2 flex flex-col bg-white min-h-screen">
-
-        {/* Demo navigation banner */}
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-amber-700 font-medium">Demo:</span>
-            <Link href="/" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
-              Accueil
-            </Link>
-            <Link href="/dashboard" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
-              Espace Candidat
-            </Link>
-            <Link href="/admin" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
-              Admin
-            </Link>
-          </div>
-        </div>
 
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-gray-100">

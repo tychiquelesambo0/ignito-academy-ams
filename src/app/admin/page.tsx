@@ -312,25 +312,6 @@ export default function AdminDashboardPage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-12 space-y-8">
 
-        {/* ── Demo Navigation ── */}
-        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-amber-800">Navigation demo:</span>
-            <Link href="/" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all">
-              Accueil
-            </Link>
-            <Link href="/apply" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all">
-              Candidature
-            </Link>
-            <Link href="/dashboard" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all">
-              Espace Candidat
-            </Link>
-            <Link href="/admin/applications/IA-2026-001234" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all">
-              Detail candidature
-            </Link>
-          </div>
-        </div>
-
         {/* ── Heading ── */}
         <div>
           <h1 className="font-serif text-3xl font-bold text-[#021463]">Bureau des Admissions</h1>

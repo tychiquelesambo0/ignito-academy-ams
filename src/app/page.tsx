@@ -43,33 +43,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Test Mode Banner - Quick access to all portals */}
-      <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
-        <div className="container mx-auto flex flex-col gap-2">
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-amber-700 font-semibold">Parcours Candidat:</span>
-            <Link href="/apply" className="px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors font-medium">
-              1. Inscription/Connexion
-            </Link>
-            <Link href="/apply/academic-history" className="px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors font-medium">
-              2. Historique Academique
-            </Link>
-            <Link href="/dashboard" className="px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors font-medium">
-              3. Espace Candidat
-            </Link>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-amber-700 font-semibold">Portail Admin:</span>
-            <Link href="/admin" className="px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors font-medium">
-              Liste Candidatures
-            </Link>
-            <Link href="/admin/applications/IA-2026-001234" className="px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors font-medium">
-              Detail Candidature
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Header/Navigation */}
       <header className="bg-[#F8FAFC] border-b border-[#E2E8F0] sticky top-0 z-50">
         {/* Main bar */}

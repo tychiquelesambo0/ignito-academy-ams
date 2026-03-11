@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -40,31 +39,18 @@ export default function AdminLoginPage() {
   const onSubmit = async (data: FormData) => {
     setServerError(null)
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 600))
-
-    // Demo mode: Accept any credentials
+    // TODO: Backend engineer - Replace with actual Supabase admin auth
+    // Verify admin role before granting access
+    // const { data, error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password })
+    // if (error) { setServerError('Email ou mot de passe incorrect.'); return }
+    // const isAdmin = await checkAdminRole(data.user.id)
+    // if (!isAdmin) { setServerError('Accès non autorisé.'); return }
+    
     router.push('/admin')
   }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-
-      {/* Demo Navigation */}
-      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
-        <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-2 text-xs">
-          <span className="text-amber-700 font-medium">Demo:</span>
-          <Link href="/" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
-            Accueil
-          </Link>
-          <Link href="/dashboard" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
-            Espace Candidat
-          </Link>
-          <Link href="/admin" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
-            Admin (direct)
-          </Link>
-        </div>
-      </div>
 
       {/* Navbar */}
       <header className="bg-[#021463]">
@@ -92,11 +78,6 @@ export default function AdminLoginPage() {
 
           {/* Card */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 space-y-5">
-
-            {/* Mock credentials hint */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-xs">
-              <strong>Mode test:</strong> Utilisez <code className="bg-blue-100 px-1 rounded">admin@ignitoacademy.com</code> / <code className="bg-blue-100 px-1 rounded">admin123</code>
-            </div>
 
             {/* Server error */}
             {serverError && (

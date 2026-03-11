@@ -41,8 +41,6 @@ export default function AdminLoginPage() {
 
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 800))
-    
-    console.log('[v0] Mock: Admin login attempt for:', data.email)
 
     // Mock authentication check
     if (data.email === MOCK_ADMIN.email && data.password === MOCK_ADMIN.password) {

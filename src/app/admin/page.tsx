@@ -203,8 +203,6 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     // Simulate loading delay
     const timer = setTimeout(() => {
-      console.log('[v0] Mock: Loading admin dashboard data')
-      
       setOfficer(MOCK_OFFICER)
       setApps(MOCK_APPLICATIONS)
       setStats({
@@ -260,7 +258,6 @@ export default function AdminDashboardPage() {
   const clearFilters = () => { setSearch(''); setFilterApp(''); setFilterPay(''); setFilterExam('') }
 
   const handleSignOut = () => {
-    console.log('[v0] Mock: Admin signing out')
     router.push('/admin/login')
   }
 

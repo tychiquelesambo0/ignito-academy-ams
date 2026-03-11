@@ -91,8 +91,19 @@ function ConfirmEmailContent() {
               href="/apply"
               className="inline-block text-sm text-[#4EA6F5] font-medium hover:underline transition-colors"
             >
-              ← Retour à la connexion
+              Retour a la connexion
             </Link>
+
+            {/* Mock: Skip email verification for testing */}
+            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <p className="text-xs text-amber-700 font-medium mb-2">Mode test uniquement:</p>
+              <Link
+                href="/apply/academic-history"
+                className="inline-flex items-center justify-center w-full min-h-[44px] px-4 bg-[#021463] hover:bg-[#021463]/90 text-white text-sm font-semibold rounded-md transition-colors"
+              >
+                Simuler la verification email et continuer
+              </Link>
+            </div>
           </div>
         </div>
         <div className="hidden lg:block px-16 pb-6 text-center">

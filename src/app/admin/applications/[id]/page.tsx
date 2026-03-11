@@ -261,8 +261,6 @@ export default function ApplicationDetailPage() {
     // Simulate loading delay
     await new Promise(resolve => setTimeout(resolve, 600))
     
-    console.log('[v0] Mock: Loading application detail for:', applicantId)
-    
     setApplicant(MOCK_APPLICANT)
     setApplication({ ...MOCK_APPLICATION, applicant_id: applicantId })
     setDocuments(MOCK_DOCUMENTS)
@@ -288,7 +286,6 @@ export default function ApplicationDetailPage() {
 
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('[v0] Mock: Updating status to:', selectedStatus)
 
     // Update local state
     setApplication(prev => prev ? { ...prev, application_status: selectedStatus, version: prev.version + 1 } : null)
@@ -308,7 +305,6 @@ export default function ApplicationDetailPage() {
 
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1200))
-    console.log('[v0] Mock: Processing decision:', decisionType)
 
     const statusMap = {
       conditional: 'Admission sous réserve',
@@ -336,7 +332,6 @@ export default function ApplicationDetailPage() {
     
     // Simulate download delay
     await new Promise(resolve => setTimeout(resolve, 800))
-    console.log('[v0] Mock: Would download document:', doc.file_name)
     
     alert(`Mode test: Le fichier "${doc.file_name}" serait téléchargé.`)
     setDownloading(null)
@@ -345,7 +340,6 @@ export default function ApplicationDetailPage() {
   // ── Sign out ───────────────────────────────────────────────────────────────
 
   const handleSignOut = () => {
-    console.log('[v0] Mock: Admin signing out')
     router.push('/admin/login')
   }
 

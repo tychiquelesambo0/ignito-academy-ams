@@ -154,7 +154,6 @@ export default function DashboardPage() {
   // Mock document upload refresh
   const refreshData = () => {
     // In real app, this would refetch from backend
-    console.log('[v0] Mock refresh triggered')
   }
 
   // Check re-apply eligibility

@@ -70,7 +70,6 @@ function DocumentSlot({
       await new Promise(resolve => setTimeout(resolve, 1500))
       
       // Mock success - call the success callback
-      console.log('[v0] Mock upload:', { file: file.name, type, applicantId })
       onSuccess()
     } catch {
       setError('Erreur réseau. Veuillez réessayer.')
@@ -90,7 +89,6 @@ function DocumentSlot({
       await new Promise(resolve => setTimeout(resolve, 800))
       
       // Mock success
-      console.log('[v0] Mock delete:', { documentId: existingDoc.id })
       onSuccess()
     } catch {
       setError('Erreur réseau. Veuillez réessayer.')
@@ -220,7 +218,6 @@ function ConditionalDocRow({ doc, onSuccess, locked }: CondDocRowProps) {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 800))
       
-      console.log('[v0] Mock delete conditional doc:', { documentId: doc.id })
       onSuccess()
     } catch {
       setError('Erreur réseau. Veuillez réessayer.')

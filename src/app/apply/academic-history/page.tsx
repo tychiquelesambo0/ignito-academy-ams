@@ -73,13 +73,7 @@ function AcademicHistoryPageInner() {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1500))
 
-    // Mock success - log data and redirect
-    console.log('[v0] Mock academic history submission:', {
-      ...data,
-      option_academique: finalOptionAcademique,
-      applicant_id: applicantId,
-    })
-
+    // Mock success - redirect to dashboard
     router.push('/dashboard')
   }
 

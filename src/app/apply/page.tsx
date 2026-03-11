@@ -38,7 +38,6 @@ function SignUpForm() {
     }
 
     // Mock success - redirect to confirmation page
-    console.log('[v0] Mock signup data:', data)
     router.push(`/apply/confirm-email?email=${encodeURIComponent(data.email)}`)
   }
 
@@ -208,7 +207,6 @@ function LoginForm() {
     }
 
     // Mock success - redirect to dashboard
-    console.log('[v0] Mock login successful')
     router.push('/dashboard')
   }
 

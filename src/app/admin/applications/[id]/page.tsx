@@ -350,7 +350,7 @@ export default function ApplicationDetailPage() {
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#021463] mx-auto mb-4" />
-          <p className="text-slate-500 text-sm">Chargement du dossier…</p>
+          <p className="text-slate-500 text-sm">Chargement du dossier���</p>
         </div>
       </div>
     )
@@ -384,6 +384,22 @@ export default function ApplicationDetailPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-10 space-y-6">
+
+        {/* ── Demo Navigation ── */}
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold text-amber-800">Navigation demo:</span>
+            <Link href="/" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all">
+              Accueil
+            </Link>
+            <Link href="/dashboard" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all">
+              Espace Candidat
+            </Link>
+            <Link href="/admin" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all">
+              Admin Liste
+            </Link>
+          </div>
+        </div>
 
         {/* ── Back link + ID ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

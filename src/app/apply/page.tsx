@@ -500,6 +500,22 @@ function AdmittaGateway() {
       {/* ── Right Panel (Auth) ── */}
       <div className="w-full lg:w-1/2 flex flex-col bg-white min-h-screen">
 
+        {/* Demo navigation banner */}
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+            <span className="text-amber-700 font-medium">Demo:</span>
+            <Link href="/" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
+              Accueil
+            </Link>
+            <Link href="/dashboard" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
+              Espace Candidat
+            </Link>
+            <Link href="/admin" className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors">
+              Admin
+            </Link>
+          </div>
+        </div>
+
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <span className="font-serif text-xl font-bold text-[#021463]">Admitta</span>

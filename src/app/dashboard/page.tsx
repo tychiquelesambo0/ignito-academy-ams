@@ -6,10 +6,28 @@ import { ApplicationStatusTracker } from '@/components/ApplicationStatusTracker'
 import { DocumentUpload } from '@/components/DocumentUpload'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { AlertTriangle, Loader2, Paperclip, CheckCircle2, X, Star, Play } from 'lucide-react'
+import { AlertTriangle, Loader2, Paperclip, CheckCircle2, X, Star, Play, Settings, ChevronDown, ChevronUp } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog'
+
+// ─── DEMO STATE OPTIONS ──────────────────────────────────────────────────────
+// These are all the different states you can toggle to see different UI views
+
+const APPLICATION_STATES = [
+  { value: 'en_attente', label: 'En attente (dossier incomplet)' },
+  { value: 'en_cours_devaluation', label: 'En cours d\'evaluation' },
+  { value: 'Admission définitive', label: 'Admission definitive' },
+  { value: 'Admission sous réserve', label: 'Admission sous reserve' },
+  { value: 'Dossier refusé', label: 'Dossier refuse' },
+]
+
+const PAYMENT_STATES = [
+  { value: 'pending', label: 'En attente' },
+  { value: 'paid', label: 'Paye' },
+  { value: 'waived', label: 'Exonere' },
+  { value: 'Confirmed', label: 'Confirme' },
+]
 
 // ─── MOCK DATA ───────────────────────────────────────────────────────────────
 // This is hardcoded mock data for frontend development.
@@ -22,29 +40,27 @@ const MOCK_APPLICANT = {
   date_naissance: '2005-03-15',
 }
 
-const MOCK_APPLICATIONS = [
-  {
-    id: '1',
-    applicant_id: 'APP-2026-001234',
-    user_id: 'user-123',
-    intake_year: 2026,
-    created_at: '2026-01-15T10:30:00Z',
-    application_status: 'en_cours_devaluation', // Options: 'en_attente', 'en_cours_devaluation', 'Admission définitive', 'Admission sous réserve', 'Dossier refusé'
-    payment_status: 'paid', // Options: 'pending', 'paid', 'waived', 'Confirmed'
-    ecole_provenance: 'Lycée Prince de Liège',
-    option_academique: 'Math-Physique',
-    exam_status: 'En attente de l\'Examen d\'État',
-    is_scholarship_eligible: true,
-    scholarship_status: null, // Options: null, 'submitted'
-    scholarship_video_url: null,
-    conditional_message: null,
-    uploadedDocuments: [
-      { id: '1', file_name: 'carte_identite.pdf', file_size_bytes: 524288, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:00:00Z', file_path: '/docs/id.pdf', document_type: 'identification' },
-      { id: '2', file_name: 'bulletin_10eme.pdf', file_size_bytes: 1048576, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:05:00Z', file_path: '/docs/b10.pdf', document_type: 'bulletin_10' },
-      { id: '3', file_name: 'bulletin_11eme.pdf', file_size_bytes: 1048576, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:10:00Z', file_path: '/docs/b11.pdf', document_type: 'bulletin_11' },
-    ],
-  },
-]
+const createMockApplication = (status: string, paymentStatus: string, scholarshipSubmitted: boolean) => ({
+  id: '1',
+  applicant_id: 'APP-2026-001234',
+  user_id: 'user-123',
+  intake_year: 2026,
+  created_at: '2026-01-15T10:30:00Z',
+  application_status: status,
+  payment_status: paymentStatus,
+  ecole_provenance: 'Lycee Prince de Liege',
+  option_academique: 'Math-Physique',
+  exam_status: 'En attente de l\'Examen d\'Etat',
+  is_scholarship_eligible: true,
+  scholarship_status: scholarshipSubmitted ? 'submitted' : null,
+  scholarship_video_url: scholarshipSubmitted ? 'https://youtube.com/watch?v=example' : null,
+  conditional_message: status === 'Admission sous réserve' ? 'Veuillez soumettre votre diplome d\'Etat des que disponible.' : null,
+  uploadedDocuments: [
+    { id: '1', file_name: 'carte_identite.pdf', file_size_bytes: 524288, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:00:00Z', file_path: '/docs/id.pdf', document_type: 'identification' },
+    { id: '2', file_name: 'bulletin_10eme.pdf', file_size_bytes: 1048576, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:05:00Z', file_path: '/docs/b10.pdf', document_type: 'bulletin_10' },
+    { id: '3', file_name: 'bulletin_11eme.pdf', file_size_bytes: 1048576, mime_type: 'application/pdf', uploaded_at: '2026-01-16T09:10:00Z', file_path: '/docs/b11.pdf', document_type: 'bulletin_11' },
+  ],
+})
 
 type DecisionStatus = 'Admission définitive' | 'Admission sous réserve' | 'Dossier refusé'
 const DECISION_STATUSES: DecisionStatus[] = [
@@ -56,10 +72,21 @@ const DECISION_STATUSES: DecisionStatus[] = [
 export default function DashboardPage() {
   const router = useRouter()
   
+  // ─── Demo control panel state ──────────────────────────────────────────────
+  const [demoOpen, setDemoOpen] = useState(true)
+  const [demoAppStatus, setDemoAppStatus] = useState('en_cours_devaluation')
+  const [demoPaymentStatus, setDemoPaymentStatus] = useState('paid')
+  const [demoScholarshipSubmitted, setDemoScholarshipSubmitted] = useState(false)
+  
   // ─── Local state (mock data driven) ────────────────────────────────────────
   const [applicant] = useState(MOCK_APPLICANT)
-  const [applicationsWithDocs, setApplicationsWithDocs] = useState(MOCK_APPLICATIONS)
+  const [applicationsWithDocs, setApplicationsWithDocs] = useState([createMockApplication(demoAppStatus, demoPaymentStatus, demoScholarshipSubmitted)])
   const [loading] = useState(false)
+  
+  // Update mock data when demo controls change
+  const updateDemoState = (status: string, payment: string, scholarship: boolean) => {
+    setApplicationsWithDocs([createMockApplication(status, payment, scholarship)])
+  }
   
   const [resubmitting, setResubmitting] = useState<string | null>(null)
   const [resubmitToast, setResubmitToast] = useState<string | null>(null)
@@ -206,6 +233,120 @@ export default function DashboardPage() {
       )}
 
       <main className="max-w-4xl mx-auto px-4 py-6 md:py-10 space-y-6">
+
+        {/* ── DEMO CONTROL PANEL ── */}
+        <div className="bg-amber-50 border border-amber-300 rounded-xl overflow-hidden">
+          <button 
+            onClick={() => setDemoOpen(!demoOpen)}
+            className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-amber-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-amber-700" />
+              <span className="font-semibold text-amber-900 text-sm">Panneau de demonstration</span>
+              <span className="text-xs text-amber-600">(Changer l&apos;etat pour tester)</span>
+            </div>
+            {demoOpen ? <ChevronUp className="w-4 h-4 text-amber-700" /> : <ChevronDown className="w-4 h-4 text-amber-700" />}
+          </button>
+          
+          {demoOpen && (
+            <div className="px-4 pb-4 space-y-4 border-t border-amber-200 pt-4">
+              {/* Application Status */}
+              <div>
+                <label className="block text-xs font-semibold text-amber-800 mb-2">Statut de candidature</label>
+                <div className="flex flex-wrap gap-2">
+                  {APPLICATION_STATES.map((state) => (
+                    <button
+                      key={state.value}
+                      onClick={() => {
+                        setDemoAppStatus(state.value)
+                        updateDemoState(state.value, demoPaymentStatus, demoScholarshipSubmitted)
+                      }}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all min-h-[40px] ${
+                        demoAppStatus === state.value
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-white text-amber-800 border border-amber-300 hover:bg-amber-100'
+                      }`}
+                    >
+                      {state.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Payment Status */}
+              <div>
+                <label className="block text-xs font-semibold text-amber-800 mb-2">Statut de paiement</label>
+                <div className="flex flex-wrap gap-2">
+                  {PAYMENT_STATES.map((state) => (
+                    <button
+                      key={state.value}
+                      onClick={() => {
+                        setDemoPaymentStatus(state.value)
+                        updateDemoState(demoAppStatus, state.value, demoScholarshipSubmitted)
+                      }}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all min-h-[40px] ${
+                        demoPaymentStatus === state.value
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-white text-amber-800 border border-amber-300 hover:bg-amber-100'
+                      }`}
+                    >
+                      {state.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Scholarship Submitted */}
+              <div>
+                <label className="block text-xs font-semibold text-amber-800 mb-2">Video de bourse</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setDemoScholarshipSubmitted(false)
+                      updateDemoState(demoAppStatus, demoPaymentStatus, false)
+                    }}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all min-h-[40px] ${
+                      !demoScholarshipSubmitted
+                        ? 'bg-amber-600 text-white'
+                        : 'bg-white text-amber-800 border border-amber-300 hover:bg-amber-100'
+                    }`}
+                  >
+                    Non soumise
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDemoScholarshipSubmitted(true)
+                      updateDemoState(demoAppStatus, demoPaymentStatus, true)
+                    }}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all min-h-[40px] ${
+                      demoScholarshipSubmitted
+                        ? 'bg-amber-600 text-white'
+                        : 'bg-white text-amber-800 border border-amber-300 hover:bg-amber-100'
+                    }`}
+                  >
+                    Soumise
+                  </button>
+                </div>
+              </div>
+              
+              {/* Quick Links */}
+              <div className="pt-2 border-t border-amber-200">
+                <label className="block text-xs font-semibold text-amber-800 mb-2">Navigation rapide</label>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all min-h-[40px] flex items-center">
+                    Accueil
+                  </Link>
+                  <Link href="/apply" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all min-h-[40px] flex items-center">
+                    Candidature
+                  </Link>
+                  <Link href="/admin" className="px-3 py-2 bg-white text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-medium transition-all min-h-[40px] flex items-center">
+                    Admin Portal
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* ── Greeting + ID row ── */}
         <div>

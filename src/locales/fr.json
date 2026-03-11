@@ -91,8 +91,8 @@
     },
     "scholarship": {
       "badge": "Cohorte Inaugurale — Offre Exclusive",
-      "title": "La Bourse d'Excellence du Fondateur",
-      "subtitle": "Jusqu'à 10 bourses d'études intégrales pour notre cohorte inaugurale.",
+      "title": "La Bourse d'Excellence",
+      "subtitle": "Jusqu'à 20 bourses d'études intégrales pour notre cohorte inaugurale.",
       "description": "Nous couvrons 100% de vos frais de scolarité et votre forfait internet pour les 4 ans. Réservé aux esprits les plus brillants de la RDC ayant une moyenne supérieure à 70%.",
       "criteria_title": "Critères d'Éligibilité",
       "criteria_1": "Moyenne générale ≥ 70% sur les 3 années",
@@ -104,7 +104,7 @@
       "covers_tuition_desc": "4 années couvertes intégralement",
       "covers_internet": "Forfait Internet",
       "covers_internet_desc": "Connectivité assurée pendant 4 ans",
-      "covers_slots": "10 Bourses",
+      "covers_slots": "20 Bourses",
       "covers_slots_desc": "Places limitées — Cohorte inaugurale"
     },
     "why_choose": {

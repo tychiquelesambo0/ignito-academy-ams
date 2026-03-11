@@ -91,8 +91,8 @@
     },
     "scholarship": {
       "badge": "Inaugural Cohort — Exclusive Offer",
-      "title": "The Founder's Excellence Scholarship",
-      "subtitle": "Up to 10 full-ride scholarships for our inaugural cohort.",
+      "title": "The Excellence Scholarship",
+      "subtitle": "Up to 20 full-ride scholarships for our inaugural cohort.",
       "description": "We cover 100% of your tuition fees and your internet data for all 4 years. Reserved for the brightest minds in the DRC with an average above 70%.",
       "criteria_title": "Eligibility Criteria",
       "criteria_1": "Overall average ≥ 70% across 3 academic years",
@@ -104,7 +104,7 @@
       "covers_tuition_desc": "All 4 years fully covered",
       "covers_internet": "Internet Data Package",
       "covers_internet_desc": "Connectivity guaranteed for 4 years",
-      "covers_slots": "10 Scholarships",
+      "covers_slots": "20 Scholarships",
       "covers_slots_desc": "Limited places — Inaugural cohort"
     },
     "why_choose": {

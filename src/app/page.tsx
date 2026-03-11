@@ -419,17 +419,17 @@ export default function Home() {
 
             {/* Coverage cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-4xl mx-auto mb-12">
-              <div className="rounded-xl border border-amber-500/30 p-6 text-center" style={{ background: 'rgba(245,158,11,0.08)' }}>
+              <div className="rounded-xl border border-amber-500/30 p-6 text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-amber-500/20 hover:border-amber-500/50" style={{ background: 'rgba(245,158,11,0.08)' }}>
                 <div className="text-3xl mb-3">🎓</div>
                 <p className="font-bold text-white text-base mb-1">{t('landing.scholarship.covers_tuition')}</p>
                 <p className="text-slate-400 text-sm">{t('landing.scholarship.covers_tuition_desc')}</p>
               </div>
-              <div className="rounded-xl border border-amber-500/30 p-6 text-center" style={{ background: 'rgba(245,158,11,0.08)' }}>
+              <div className="rounded-xl border border-amber-500/30 p-6 text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-amber-500/20 hover:border-amber-500/50" style={{ background: 'rgba(245,158,11,0.08)' }}>
                 <div className="text-3xl mb-3">📶</div>
                 <p className="font-bold text-white text-base mb-1">{t('landing.scholarship.covers_internet')}</p>
                 <p className="text-slate-400 text-sm">{t('landing.scholarship.covers_internet_desc')}</p>
               </div>
-              <div className="rounded-xl border border-amber-500/30 p-6 text-center" style={{ background: 'rgba(245,158,11,0.08)' }}>
+              <div className="rounded-xl border border-amber-500/30 p-6 text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-amber-500/20 hover:border-amber-500/50" style={{ background: 'rgba(245,158,11,0.08)' }}>
                 <div className="text-3xl mb-3">🏆</div>
                 <p className="font-bold text-white text-base mb-1">{t('landing.scholarship.covers_slots')}</p>
                 <p className="text-slate-400 text-sm">{t('landing.scholarship.covers_slots_desc')}</p>

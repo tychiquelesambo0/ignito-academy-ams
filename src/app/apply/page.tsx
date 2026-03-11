@@ -29,16 +29,10 @@ function SignUpForm() {
     setServerError(null)
 
     // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise(resolve => setTimeout(resolve, 800))
 
-    // Mock validation - check for "existing" email
-    if (data.email === 'existing@example.com') {
-      setServerError('Cette adresse email est déjà utilisée. Veuillez vous connecter.')
-      return
-    }
-
-    // Mock success - redirect to confirmation page
-    router.push(`/apply/confirm-email?email=${encodeURIComponent(data.email)}`)
+    // Demo mode: Skip email confirmation, go directly to academic history
+    router.push('/apply/academic-history')
   }
 
   return (
@@ -198,15 +192,10 @@ function LoginForm() {
     setServerError(null)
 
     // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 800))
 
-    // Mock validation
-    if (data.email !== 'demo@example.com' || data.password !== 'password123') {
-      setServerError('Email ou mot de passe incorrect. Veuillez réessayer.')
-      return
-    }
-
-    // Mock success - redirect to dashboard
+    // Demo mode: Accept any email/password
+    // Just redirect to dashboard
     router.push('/dashboard')
   }
 

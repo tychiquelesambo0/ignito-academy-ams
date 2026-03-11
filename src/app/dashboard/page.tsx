@@ -11,9 +11,12 @@ import { DocumentUpload } from '@/components/DocumentUpload'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { handleLogout, handleNewApplication } from './actions'
-import { AlertTriangle, Loader2, Paperclip, CheckCircle2, X } from 'lucide-react'
+import { AlertTriangle, Loader2, Paperclip, CheckCircle2, X, Star, Play } from 'lucide-react'
 import { useRef } from 'react'
 import type { DecisionStatus } from '@/components/pdf/DecisionLetterPDF'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog'
 
 // Lazy-load the PDF button to avoid SSR — @react-pdf/renderer is client-only
 const PDFDownloadButton = dynamicImport(
@@ -38,6 +41,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [resubmitting, setResubmitting] = useState<string | null>(null)
   const [resubmitToast, setResubmitToast] = useState<string | null>(null)
+  // Scholarship video modal state
+  const [scholarshipModal, setScholarshipModal] = useState(false)
+  const [videoUrl,   setVideoUrl]   = useState('')
+  const [videoError, setVideoError] = useState<string | null>(null)
+  const [videoSaving, setVideoSaving] = useState(false)
   // Conditional upload state keyed by applicant_id
   const [condFile, setCondFile]       = useState<File | null>(null)
   const [condUploading, setCondUploading] = useState(false)
@@ -88,7 +96,7 @@ export default function DashboardPage() {
     // Get applicant profile — if missing, the account was deleted; sign out
     const { data: applicantData, error: profileError } = await supabase
       .from('applicants')
-      .select('prenom, nom, email')
+      .select('prenom, nom, email, date_naissance')
       .eq('id', user.id)
       .single()
 
@@ -184,6 +192,41 @@ export default function DashboardPage() {
     } finally {
       setResubmitting(null)
       setTimeout(() => setResubmitToast(null), 5000)
+    }
+  }
+
+  // ── Scholarship video submission ────────────────────────────────────────────
+  const handleVideoSubmit = async () => {
+    setVideoError(null)
+    const trimmed = videoUrl.trim()
+    if (!trimmed) { setVideoError('Veuillez saisir une URL.'); return }
+
+    const isYouTube = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(trimmed)
+    const isDrive   = /^https?:\/\/(drive|docs)\.google\.com\//.test(trimmed)
+    if (!isYouTube && !isDrive) {
+      setVideoError('URL invalide. Utilisez un lien YouTube (youtube.com / youtu.be) ou Google Drive (drive.google.com).')
+      return
+    }
+
+    setVideoSaving(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setVideoError('Session expirée. Veuillez vous reconnecter.'); return }
+
+      // Cast to any: Supabase types don't yet include scholarship columns
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('applications')
+        .update({ scholarship_video_url: trimmed, scholarship_status: 'submitted' })
+        .eq('user_id', user.id)
+      if (error) { setVideoError('Erreur lors de la sauvegarde. Veuillez réessayer.'); return }
+
+      setScholarshipModal(false)
+      setVideoUrl('')
+      await fetchData()
+    } finally {
+      setVideoSaving(false)
     }
   }
 
@@ -360,72 +403,77 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Action banners */}
+                {/* ── Submission success banner ── */}
+                {(application.application_status === 'en_cours_devaluation' ||
+                  application.payment_status === 'waived' ||
+                  application.payment_status === 'paid' ||
+                  application.payment_status === 'Confirmed') &&
+                  application.application_status !== 'Admission sous réserve' &&
+                  application.application_status !== 'Admission définitive' &&
+                  application.application_status !== 'Dossier refusé' && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <p className="text-sm font-medium text-emerald-800">
+                      ✅ Dossier soumis avec succès. Notre équipe d&apos;admission examine actuellement votre profil.
+                    </p>
+                  </div>
+                )}
+
+                {/* ── Upload prompt (docs still pending) ── */}
                 {(() => {
                   const allDocsUploaded = REQUIRED_DOC_TYPES.every(t =>
                     application.uploadedDocuments?.some((d: any) => d.document_type === t)
                   )
+                  if (allDocsUploaded) return null
+                  if (application.application_status === 'Admission sous réserve') return null
                   return (
-                    <>
-                      {!allDocsUploaded && application.payment_status !== 'Confirmed' && application.payment_status !== 'paid' && application.application_status !== 'Admission sous réserve' && (
-                        <div className="flex items-start gap-3.5 p-4 bg-blue-50 border border-[#021463]/15 rounded-xl">
-                          <div className="w-8 h-8 rounded-lg bg-[#021463]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <svg className="w-4 h-4 text-[#021463]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-[#021463] mb-0.5">Action requise</p>
-                            <p className="text-sm text-[#1E293B]/70 leading-relaxed">
-                              Veuillez télécharger les 5 documents requis ci-dessous. Le paiement des frais d&apos;étude de dossier sera débloqué ensuite.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </>
+                    <div className="flex items-start gap-3.5 p-4 bg-blue-50 border border-[#021463]/15 rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-[#021463]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-[#021463]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#021463] mb-0.5">Action requise</p>
+                        <p className="text-sm text-[#1E293B]/70 leading-relaxed">
+                          Veuillez télécharger les documents requis ci-dessous pour compléter votre dossier.
+                        </p>
+                      </div>
+                    </div>
                   )
                 })()}
 
-                {application.uploadedDocuments && REQUIRED_DOC_TYPES.every((t: string) =>
-                  application.uploadedDocuments.some((d: any) => d.document_type === t)
-                ) && application.payment_status === 'Pending' && (
-                  <div className="flex items-start gap-3.5 p-4 bg-[#10B981]/5 border border-[#10B981]/20 rounded-xl">
-                    <div className="w-8 h-8 rounded-lg bg-[#10B981]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4 text-[#10B981]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-[#065f46] mb-1">Documents reçus — dernière étape</p>
-                      <p className="text-sm text-[#1E293B]/65 mb-3">
-                        Vos documents ont été téléchargés avec succès. Procédez au paiement pour valider votre candidature.
+                {/* ── Scholarship VIP card ── */}
+                {application.is_scholarship_eligible &&
+                  application.application_status === 'en_cours_devaluation' && (
+                  <div className="rounded-xl border border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-amber-200 flex items-center gap-3">
+                      <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                      <p className="font-bold text-amber-900 text-sm">
+                        🌟 Éligibilité à la Bourse d&apos;Excellence
                       </p>
-                      <Link href={`/apply/payment?applicant_id=${application.applicant_id}`}>
-                        <Button className="bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[44px] px-6 text-sm font-semibold rounded-md">
-                          Procéder au paiement (29 USD)
-                        </Button>
-                      </Link>
                     </div>
-                  </div>
-                )}
-
-                {application.payment_status === 'Failed' && (
-                  <div className="flex items-start gap-3.5 p-4 bg-[#EF4444]/5 border border-[#EF4444]/20 rounded-xl">
-                    <div className="w-8 h-8 rounded-lg bg-[#EF4444]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-4 h-4 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-[#991b1b] mb-1">Paiement échoué</p>
-                      <p className="text-sm text-[#1E293B]/65 mb-3">
-                        Votre tentative de paiement n&apos;a pas abouti. Veuillez réessayer.
-                      </p>
-                      <Link href={`/apply/payment?applicant_id=${application.applicant_id}`}>
-                        <Button className="bg-[#EF4444] hover:bg-[#EF4444]/90 text-white min-h-[44px] px-6 text-sm font-semibold rounded-md">
-                          Réessayer le paiement
-                        </Button>
-                      </Link>
+                    <div className="px-5 py-4 space-y-3">
+                      {application.scholarship_status === 'submitted' ? (
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                          <p className="text-sm font-semibold text-emerald-800">✅ Vidéo soumise — en cours d&apos;évaluation</p>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm text-amber-800 leading-relaxed">
+                            Félicitations ! Votre profil académique répond aux critères de la Bourse d&apos;Excellence du Fondateur.
+                            Soumettez un essai vidéo de 2 minutes pour finaliser votre candidature à la bourse.
+                          </p>
+                          <Button
+                            onClick={() => { setScholarshipModal(true); setVideoError(null) }}
+                            className="bg-[#021463] hover:bg-[#021463]/90 text-white min-h-[44px] px-5 text-sm font-semibold rounded-md flex items-center gap-2"
+                          >
+                            <Play className="w-4 h-4" />
+                            Soumettre ma candidature à la Bourse
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -541,6 +589,57 @@ export default function DashboardPage() {
 
         <p className="text-center text-xs text-slate-300 pt-4">© 2026 Ignito Academy. Tous droits réservés.</p>
       </main>
+
+      {/* ── Scholarship Video Modal ── */}
+      <Dialog open={scholarshipModal} onOpenChange={setScholarshipModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-[#021463] text-xl">
+              🌟 Soumettre mon essai vidéo
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 text-sm leading-relaxed">
+              Collez ci-dessous le lien de votre essai vidéo (YouTube non-listé ou Google Drive).
+              La vidéo doit durer entre 1 et 3 minutes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-[#1E293B]">
+                URL de la vidéo <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={e => { setVideoUrl(e.target.value); setVideoError(null) }}
+                placeholder="https://youtube.com/watch?v=... ou https://drive.google.com/..."
+                className="w-full min-h-[48px] px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EA6F5]/40 focus:border-[#4EA6F5] transition-colors"
+              />
+              {videoError && <p className="text-xs text-red-500">{videoError}</p>}
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <Button
+                variant="outline"
+                onClick={() => { setScholarshipModal(false); setVideoUrl(''); setVideoError(null) }}
+                className="flex-1 min-h-[48px] rounded-md text-sm"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleVideoSubmit}
+                disabled={videoSaving}
+                className="flex-1 min-h-[48px] bg-[#021463] hover:bg-[#021463]/90 text-white font-semibold rounded-md text-sm"
+              >
+                {videoSaving
+                  ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Envoi…</>
+                  : 'Soumettre'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

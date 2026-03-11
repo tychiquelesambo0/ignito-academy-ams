@@ -156,53 +156,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Partner Logos Section */}
-        <section className="py-10 border-t border-white/5" style={{ background: '#030d3a' }}>
-          <div className="container mx-auto px-4">
-            {/* Section label */}
-            <p className="text-center text-white/50 font-serif text-lg font-semibold tracking-wide mb-8">
-              {t('landing.partners.title')}
-            </p>
-
-            {/* Logo grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-
-              {/* Slot 1 — NCC Education */}
-              <div className="group flex items-center justify-center h-[80px] rounded-lg bg-white/[0.04] border border-white/[0.10] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 px-4">
-                <div className="flex flex-col items-center gap-1.5 opacity-50 group-hover:opacity-80 transition-opacity duration-300">
-                  <Award className="w-5 h-5 text-white" />
-                  <span className="text-white text-[11px] font-semibold tracking-wide leading-tight text-center">NCC Education</span>
-                </div>
-              </div>
-
-              {/* Slot 2 — Ofqual */}
-              <div className="group flex items-center justify-center h-[80px] rounded-lg bg-white/[0.04] border border-white/[0.10] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 px-4">
-                <div className="flex flex-col items-center gap-1.5 opacity-50 group-hover:opacity-80 transition-opacity duration-300">
-                  <GraduationCap className="w-5 h-5 text-white" />
-                  <span className="text-white text-[11px] font-semibold tracking-wide leading-tight text-center">Ofqual</span>
-                </div>
-              </div>
-
-              {/* Slot 3 — Placeholder */}
-              <div className="group flex items-center justify-center h-[80px] rounded-lg bg-white/[0.04] border border-dashed border-white/[0.12] hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300 px-4">
-                <div className="flex flex-col items-center gap-1.5 opacity-30 group-hover:opacity-50 transition-opacity duration-300">
-                  <Globe className="w-5 h-5 text-white" />
-                  <span className="text-white text-[11px] font-medium tracking-wide leading-tight text-center">Partenaire</span>
-                </div>
-              </div>
-
-              {/* Slot 4 — Placeholder */}
-              <div className="group flex items-center justify-center h-[80px] rounded-lg bg-white/[0.04] border border-dashed border-white/[0.12] hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300 px-4">
-                <div className="flex flex-col items-center gap-1.5 opacity-30 group-hover:opacity-50 transition-opacity duration-300">
-                  <BookOpen className="w-5 h-5 text-white" />
-                  <span className="text-white text-[11px] font-medium tracking-wide leading-tight text-center">Partenaire</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
         {/* 4-Year Journey Timeline (Horizontal) */}
         <section className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4">
@@ -436,107 +389,83 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Pathway Detail + Financial — merged dark section */}
-        <section className="py-16 md:py-24 bg-slate-900 text-white">
-          <div className="container mx-auto px-4">
+        {/* ── Bourse d'Excellence du Fondateur ── */}
+        <section className="py-16 md:py-24 bg-slate-900 text-white relative overflow-hidden">
+          {/* Decorative glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-10 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse, #f59e0b 0%, transparent 70%)' }} />
 
-            {/* Section header */}
-            <div className="max-w-4xl mx-auto text-center mb-14">
-              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">
-                {t('landing.pathway_detail.title')}
+          <div className="container mx-auto px-4 relative z-10">
+
+            {/* Badge */}
+            <div className="flex justify-center mb-6">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                ⭐ {t('landing.scholarship.badge')}
+              </span>
+            </div>
+
+            {/* Headline */}
+            <div className="max-w-3xl mx-auto text-center mb-12">
+              <h2 className="font-serif text-3xl md:text-5xl font-bold mb-5 leading-tight">
+                {t('landing.scholarship.title')}
               </h2>
-              <p className="text-xl text-slate-300 mb-4">
-                {t('landing.pathway_detail.subtitle')}
+              <p className="text-lg md:text-xl text-slate-300 mb-3">
+                {t('landing.scholarship.subtitle')}
               </p>
-              <p className="text-slate-400">
-                {t('landing.pathway_detail.description')}
+              <p className="text-slate-400 leading-relaxed">
+                {t('landing.scholarship.description')}
               </p>
             </div>
 
-            {/* Financial comparison cards */}
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-10">
-                <h3 className="font-serif text-2xl md:text-3xl font-bold mb-3">
-                  {t('landing.financial.title')}
-                </h3>
-                <p className="text-slate-300">
-                  {t('landing.financial.subtitle')}
-                </p>
+            {/* Coverage cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-4xl mx-auto mb-12">
+              <div className="rounded-xl border border-amber-500/30 p-6 text-center" style={{ background: 'rgba(245,158,11,0.08)' }}>
+                <div className="text-3xl mb-3">🎓</div>
+                <p className="font-bold text-white text-base mb-1">{t('landing.scholarship.covers_tuition')}</p>
+                <p className="text-slate-400 text-sm">{t('landing.scholarship.covers_tuition_desc')}</p>
               </div>
-
-              <div className="rounded-xl p-6 md:p-8 border border-white/10" style={{ background: 'rgba(2,20,99,0.45)' }}>
-                <div className="grid md:grid-cols-2 gap-5 mb-6">
-
-                  {/* Total Programme Cost */}
-                  <div className="card-dark rounded-lg p-5">
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">{t('landing.financial.cost_title')}</div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-300 text-sm">{t('landing.financial.ignito')}</span>
-                        <span className="text-xl font-bold text-[#4EA6F5]">$7,500</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400 text-sm">{t('landing.financial.traditional')}</span>
-                        <span className="text-xl font-bold text-slate-500 line-through">$150,000+</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tuition Fees */}
-                  <div className="card-dark rounded-lg p-5">
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">{t('landing.financial.tuition_title')}</div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-300 text-sm">{t('landing.financial.ignito')}</span>
-                        <span className="text-xl font-bold text-[#4EA6F5]">{t('landing.financial.included')}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400 text-sm">{t('landing.financial.traditional')}</span>
-                        <span className="text-xl font-bold text-slate-500 line-through">$80,000+</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Living Expenses */}
-                  <div className="card-dark rounded-lg p-5">
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">{t('landing.financial.living_title')}</div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-300 text-sm">{t('landing.financial.ignito')}</span>
-                        <span className="text-xl font-bold text-[#4EA6F5]">{t('landing.financial.at_home')}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400 text-sm">{t('landing.financial.traditional')}</span>
-                        <span className="text-xl font-bold text-slate-500 line-through">$65,000+</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Visa & Travel */}
-                  <div className="card-dark rounded-lg p-5">
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">{t('landing.financial.visa_title')}</div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-300 text-sm">{t('landing.financial.ignito')}</span>
-                        <span className="text-xl font-bold text-[#4EA6F5]">$0</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400 text-sm">{t('landing.financial.traditional')}</span>
-                        <span className="text-xl font-bold text-slate-500 line-through">$4,500+</span>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Savings banner — Accent Blue instead of red */}
-                <div className="rounded-lg p-6 text-center" style={{ background: '#4EA6F5' }}>
-                  <div className="text-sm font-semibold mb-2 text-white/90 uppercase tracking-wider">{t('landing.financial.savings_title')}</div>
-                  <div className="text-4xl md:text-5xl font-bold text-white mb-3">$142,000+</div>
-                  <p className="text-sm text-white/85">{t('landing.financial.savings_desc')}</p>
-                </div>
-
+              <div className="rounded-xl border border-amber-500/30 p-6 text-center" style={{ background: 'rgba(245,158,11,0.08)' }}>
+                <div className="text-3xl mb-3">📶</div>
+                <p className="font-bold text-white text-base mb-1">{t('landing.scholarship.covers_internet')}</p>
+                <p className="text-slate-400 text-sm">{t('landing.scholarship.covers_internet_desc')}</p>
               </div>
+              <div className="rounded-xl border border-amber-500/30 p-6 text-center" style={{ background: 'rgba(245,158,11,0.08)' }}>
+                <div className="text-3xl mb-3">🏆</div>
+                <p className="font-bold text-white text-base mb-1">{t('landing.scholarship.covers_slots')}</p>
+                <p className="text-slate-400 text-sm">{t('landing.scholarship.covers_slots_desc')}</p>
+              </div>
+            </div>
+
+            {/* Eligibility criteria */}
+            <div className="max-w-2xl mx-auto mb-10">
+              <p className="text-center text-xs font-bold uppercase tracking-widest text-amber-400 mb-5">
+                {t('landing.scholarship.criteria_title')}
+              </p>
+              <div className="space-y-3">
+                {[
+                  t('landing.scholarship.criteria_1'),
+                  t('landing.scholarship.criteria_2'),
+                  t('landing.scholarship.criteria_3'),
+                ].map((c, i) => (
+                  <div key={i} className="flex items-center gap-3 p-4 rounded-lg bg-white/5 border border-white/10">
+                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                    </div>
+                    <span className="text-sm text-slate-200">{c}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="text-center space-y-3">
+              <Button
+                onClick={handleApplyClick}
+                className="min-h-[52px] px-8 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-md text-base transition-all shadow-lg shadow-amber-500/30"
+              >
+                {t('landing.scholarship.cta')}
+              </Button>
+              <p className="text-xs text-slate-400">{t('landing.scholarship.note')}</p>
             </div>
 
           </div>

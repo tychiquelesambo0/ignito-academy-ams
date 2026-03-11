@@ -28,6 +28,7 @@ interface Application {
   exam_status: string | null
   prenom: string
   nom: string
+  is_scholarship_eligible: boolean
 }
 
 type SortKey = 'applicant_id' | 'nom' | 'exam_status' | 'payment_status' | 'application_status' | 'created_at'
@@ -149,7 +150,7 @@ export default function AdminDashboardPage() {
         .from('applications')
         .select(`
           applicant_id, application_status, payment_status,
-          created_at, exam_status,
+          created_at, exam_status, is_scholarship_eligible,
           applicants!inner (prenom, nom)
         `)
         .order('created_at', { ascending: false })
@@ -159,9 +160,10 @@ export default function AdminDashboardPage() {
         application_status: a.application_status,
         payment_status:     a.payment_status,
         created_at:         a.created_at,
-        exam_status:        a.exam_status ?? null,
-        prenom:             a.applicants?.prenom ?? '—',
-        nom:                a.applicants?.nom    ?? '—',
+        exam_status:             a.exam_status ?? null,
+        is_scholarship_eligible: a.is_scholarship_eligible ?? false,
+        prenom:                  a.applicants?.prenom ?? '—',
+        nom:                     a.applicants?.nom    ?? '—',
       }))
 
       setApps(all)
@@ -424,7 +426,14 @@ export default function AdminDashboardPage() {
                         <span className="font-mono text-xs font-bold text-[#021463]">{app.applicant_id}</span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="font-medium text-slate-800 text-sm">{app.prenom} {app.nom}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-slate-800 text-sm">{app.prenom} {app.nom}</span>
+                          {app.is_scholarship_eligible && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300">
+                              ⭐ Bourse
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3.5 hidden md:table-cell">
                         <span className="text-xs text-slate-500">{app.exam_status ?? '—'}</span>

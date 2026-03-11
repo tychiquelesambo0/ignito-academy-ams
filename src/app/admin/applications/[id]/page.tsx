@@ -27,6 +27,14 @@ interface Application {
   payment_status: string; transaction_id: string | null
   payment_confirmed_at: string | null; conditional_message: string | null
   version: number; created_at: string; updated_at: string
+  graduation_year: number | null
+  grade_10_average: number | null
+  grade_11_average: number | null
+  grade_12_average: number | null
+  exetat_percentage: number | null
+  is_scholarship_eligible: boolean
+  scholarship_status: string
+  scholarship_video_url: string | null
 }
 
 interface UploadedDoc {
@@ -195,6 +203,8 @@ export default function ApplicationDetailPage() {
         exam_status, application_status, payment_status,
         transaction_id, payment_confirmed_at,
         version, created_at, updated_at,
+        graduation_year, grade_10_average, grade_11_average, grade_12_average,
+        exetat_percentage, is_scholarship_eligible, scholarship_status, scholarship_video_url,
         applicants!inner (
           prenom, nom, email, phone_number, date_naissance
         )
@@ -227,10 +237,18 @@ export default function ApplicationDetailPage() {
       payment_status:      raw.payment_status,
       transaction_id:      raw.transaction_id,
       payment_confirmed_at: raw.payment_confirmed_at,
-      conditional_message: raw.conditional_message ?? null,
-      version:             raw.version,
-      created_at:          raw.created_at,
-      updated_at:          raw.updated_at,
+      conditional_message:     raw.conditional_message ?? null,
+      version:                 raw.version,
+      created_at:              raw.created_at,
+      updated_at:              raw.updated_at,
+      graduation_year:         raw.graduation_year ?? null,
+      grade_10_average:        raw.grade_10_average ?? null,
+      grade_11_average:        raw.grade_11_average ?? null,
+      grade_12_average:        raw.grade_12_average ?? null,
+      exetat_percentage:       raw.exetat_percentage ?? null,
+      is_scholarship_eligible: raw.is_scholarship_eligible ?? false,
+      scholarship_status:      raw.scholarship_status ?? 'pending',
+      scholarship_video_url:   raw.scholarship_video_url ?? null,
     }
     setApplication(appData)
     setSelectedStatus('')      // always reset to placeholder on load/refresh
@@ -550,11 +568,94 @@ export default function ApplicationDetailPage() {
 
             {/* Academic history */}
             <SectionCard icon={GraduationCap} title="Historique académique">
-              <InfoRow label="École de provenance" value={application.ecole_provenance} />
-              <InfoRow label="Option académique"   value={application.option_academique} />
-              <InfoRow label="Examen d'État"       value={application.exam_status} />
-              <InfoRow label="Année d'intégration" value={String(application.intake_year)} />
+              <InfoRow label="École de provenance"        value={application.ecole_provenance} />
+              <InfoRow label="Option académique"          value={application.option_academique} />
+              <InfoRow label="Examen d'État"              value={application.exam_status} />
+              <InfoRow label="Année d'intégration"        value={String(application.intake_year)} />
+              {application.graduation_year && (
+                <InfoRow label="Année d'obtention" value={String(application.graduation_year)} />
+              )}
             </SectionCard>
+
+            {/* ── Grade Grid (always visible for all applications) ── */}
+            <SectionCard icon={GraduationCap} title="Notes académiques déclarées">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: '10e année',  value: application.grade_10_average },
+                  { label: '11e année',  value: application.grade_11_average },
+                  { label: '12e année',  value: application.grade_12_average },
+                  { label: 'Exétat (%)', value: application.exetat_percentage },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-slate-50 rounded-lg border border-slate-200 p-3 text-center">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
+                    <p className={`text-xl font-bold ${
+                      value == null ? 'text-slate-300' :
+                      value >= 70   ? 'text-emerald-600' :
+                      value >= 50   ? 'text-amber-600'   : 'text-red-500'
+                    }`}>
+                      {value != null ? `${value}%` : '—'}
+                    </p>
+                    {value != null && (
+                      <p className="text-[10px] mt-1 font-medium text-slate-400">
+                        {value >= 70 ? '✓ ≥ 70%' : value >= 50 ? '△ ≥ 50%' : '✗ < 50%'}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {application.grade_10_average != null && application.grade_11_average != null && application.grade_12_average != null && (
+                <div className="mt-3 flex items-center gap-2 p-2.5 bg-[#021463]/5 rounded-lg">
+                  <span className="text-xs font-semibold text-[#021463]">Moyenne 3 ans :</span>
+                  <span className={`text-sm font-bold ${
+                    ((application.grade_10_average + application.grade_11_average + application.grade_12_average) / 3) >= 70
+                      ? 'text-emerald-600' : 'text-amber-600'
+                  }`}>
+                    {((application.grade_10_average + application.grade_11_average + application.grade_12_average) / 3).toFixed(1)}%
+                  </span>
+                </div>
+              )}
+            </SectionCard>
+
+            {/* ── Scholarship Evaluation (only for eligible candidates) ── */}
+            {application.is_scholarship_eligible && (
+              <div className="rounded-xl border border-amber-400 overflow-hidden">
+                <div className="bg-amber-50 px-5 py-3 border-b border-amber-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-500 text-lg">⭐</span>
+                    <p className="font-bold text-amber-900 text-sm">Évaluation Bourse d&apos;Excellence</p>
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                    application.scholarship_status === 'submitted'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : 'bg-amber-100 text-amber-800 border-amber-300'
+                  }`}>
+                    {application.scholarship_status === 'submitted' ? '✅ Vidéo soumise' :
+                     application.scholarship_status === 'eligible'  ? '⭐ Éligible' : application.scholarship_status}
+                  </span>
+                </div>
+                <div className="bg-amber-50/50 px-5 py-4 space-y-3">
+                  {application.scholarship_video_url ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">Essai vidéo soumis</p>
+                      <a
+                        href={application.scholarship_video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#4EA6F5] hover:bg-[#4EA6F5]/90 text-white text-sm font-semibold rounded-md transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        ▶️ Visionner l&apos;Essai Vidéo
+                      </a>
+                      <p className="text-xs text-amber-700 break-all">{application.scholarship_video_url}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-amber-700 italic">Le candidat n&apos;a pas encore soumis son essai vidéo.</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Payment info */}
             <SectionCard icon={CreditCard} title="Informations de paiement">

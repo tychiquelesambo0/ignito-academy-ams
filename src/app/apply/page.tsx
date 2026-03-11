@@ -542,7 +542,7 @@ function AdmittaGateway() {
               <p className="text-white/60 text-[15px] leading-relaxed font-light">
                 Le portail d&apos;admission officiel de{' '}
                 <span className="text-white font-normal">Ignito Academy</span>.
-                {' '}Soumettez votre candidature et accédez à nos licences accréditées par le Royaume-Uni depuis la RDC.
+                {' '}Soumettez votre candidature et accédez à nos licences britanniques depuis la RDC.
               </p>
 
               {/* Trust signals */}
@@ -552,8 +552,8 @@ function AdmittaGateway() {
                     <Award className="w-4 h-4 text-[#4EA6F5]" />
                   </div>
                   <div>
-                    <p className="text-white text-sm font-medium leading-tight">NCC Education · Royaume-Uni</p>
-                    <p className="text-white/40 text-xs mt-0.5">Licence accréditée</p>
+                    <p className="text-white text-sm font-medium leading-tight">Excellence Britannique · Cadre RQF</p>
+                    <p className="text-white/40 text-xs mt-0.5">Cursus aligné sur le cadre officiel</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3.5">

@@ -87,8 +87,8 @@ export function PathwayTimeline() {
           {/* Partnership Badge */}
           <div className="mt-12 text-center">
             <div className="inline-flex items-center gap-2 px-6 py-3 bg-background rounded-lg border-2 border-primary/20">
-              <span className="text-sm text-muted-foreground">{t('landing.hero.partnership')}</span>
-              <span className="font-semibold text-primary text-lg">NCC Education</span>
+              <span className="text-sm text-muted-foreground">Parcours structuré ·</span>
+              <span className="font-semibold text-primary text-lg">Excellence Britannique</span>
               <span className="text-2xl">🇬🇧</span>
             </div>
           </div>

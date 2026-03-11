@@ -33,7 +33,7 @@ function ConfirmEmailContent() {
               </h1>
               <p className="text-white/60 text-[15px] leading-relaxed font-light w-full">
                 Le portail d&apos;admission officiel de Ignito Academy. Soumettez votre candidature
-                et accédez à nos licences accréditées par le Royaume-Uni depuis la RDC.
+                et accédez à nos licences britanniques depuis la RDC.
               </p>
             </div>
           </div>

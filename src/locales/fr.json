@@ -7,20 +7,17 @@
       "blog": "Blog"
     },
     "hero": {
-      "title": "Obtenez une Licence Britannique Accréditée depuis la RDC",
+      "title": "Obtenez une Licence Britannique depuis la RDC",
       "subtitle": "Le cursus complet en 4 ans, 100% à distance. Débutez dès l'obtention de votre Diplôme d'État avec notre année préparatoire, et décrochez votre Licence Britannique sans frais de voyage ni visa.",
       "cta_primary": "Postuler Maintenant",
       "cta_secondary": "En Savoir Plus",
-      "badge": "Qualification de Niveau 3"
-    },
-    "partners": {
-      "title": "Nos Partenaires"
+      "badge": "Excellence Britannique — Cadre RQF"
     },
     "stats": {
       "years": "4 Années",
       "years_desc": "Parcours Complet",
       "uk": "UK",
-      "uk_desc": "Programmes Accrédités",
+      "uk_desc": "Excellence Britannique",
       "distance": "100%",
       "distance_desc": "Enseignement à Distance",
       "drc": "RDC",
@@ -29,7 +26,7 @@
     "journey": {
       "title": "Votre Parcours de 4 Ans",
       "subtitle": "Complétez l'intégralité de votre Licence Britannique sans quitter la RDC.",
-      "subtitle2": "De l'Examen d'État à une Licence Britannique Accréditée",
+      "subtitle2": "De l'Examen d'État à une Licence Britannique — Parcours structuré et aligné sur le cadre RQF",
       "year0": "Année 1",
       "year0_title": "Diplôme de Foundation",
       "year0_location": "RDC / En Ligne",
@@ -75,15 +72,15 @@
     },
     "pathway_detail": {
       "title": "Le Diplôme Britannique Vient à Vous",
-      "subtitle": "Étudiez Intelligemment. Économisez. Obtenez un Diplôme Britannique—Depuis la RDC.",
-      "description": "Complétez les 4 années de votre diplôme accrédité britannique en RDC grâce à notre modèle innovant en ligne + hub—vous permettant d'économiser plus de 142 000 $ en frais de scolarité, coûts de vie et dépenses de voyage.",
+      "subtitle": "Étudiez Intelligemment. Économisez. Obtenez un Diplôme Britannique — Depuis la RDC.",
+      "description": "Complétez les 4 années de votre diplôme britannique en RDC grâce à notre modèle innovant en ligne + hub — vous permettant d'économiser plus de 142 000 $ en frais de scolarité, coûts de vie et dépenses de voyage.",
       "timeline_title": "Le Parcours de 4 Ans",
       "year0_title": "Diplôme de Foundation",
       "year0_location": "RDC / En Ligne",
       "year0_desc": "Développez votre anglais académique et vos compétences d'étude avec notre Hub RDC et un accès complet en ligne aux ressources britanniques.",
       "year1_title": "Niveau Certificate",
       "year1_location": "RDC / En Ligne",
-      "year1_desc": "Commencez votre programme accrédité britannique. Étudiez en ligne avec un soutien hebdomadaire en personne à notre Hub RDC.",
+      "year1_desc": "Commencez votre programme britannique. Étudiez en ligne avec un soutien hebdomadaire en personne à notre Hub RDC.",
       "year2_title": "Niveau Diploma",
       "year2_location": "RDC / En Ligne",
       "year2_desc": "Poursuivez vos études depuis chez vous. Accédez à des cours en direct, du contenu enregistré et des conseillers académiques locaux.",
@@ -92,25 +89,29 @@
       "year3_desc": "Complétez votre dernière année entièrement en ligne selon les standards universitaires britanniques. Obtenez votre diplôme britannique sans quitter la RDC.",
       "year3_badge": "ANNÉE FINALE"
     },
-    "financial": {
-      "title": "Un Choix Financier Stratégique",
-      "subtitle": "Même diplôme britannique. Coût considérablement réduit.",
-      "cost_title": "Coût Total du Programme",
-      "ignito": "Parcours Ignito",
-      "traditional": "UK Traditionnel",
-      "tuition_title": "Frais de Scolarité (4 Ans)",
-      "living_title": "Frais de Subsistance (4 Ans)",
-      "visa_title": "Frais de Visa et Voyage",
-      "included": "Inclus",
-      "at_home": "À Domicile",
-      "savings_title": "ÉCONOMIES TOTALES AVEC IGNITO",
-      "savings_desc": "Économisez sur les frais de scolarité, les coûts de vie, les frais de visa et les dépenses de voyage tout en obtenant votre diplôme britannique depuis la RDC."
+    "scholarship": {
+      "badge": "Cohorte Inaugurale — Offre Exclusive",
+      "title": "La Bourse d'Excellence du Fondateur",
+      "subtitle": "Jusqu'à 10 bourses d'études intégrales pour notre cohorte inaugurale.",
+      "description": "Nous couvrons 100% de vos frais de scolarité et votre forfait internet pour les 4 ans. Réservé aux esprits les plus brillants de la RDC ayant une moyenne supérieure à 70%.",
+      "criteria_title": "Critères d'Éligibilité",
+      "criteria_1": "Moyenne générale ≥ 70% sur les 3 années",
+      "criteria_2": "Âge inférieur à 25 ans à la date de candidature",
+      "criteria_3": "Diplôme d'État obtenu en 2024, 2025 ou 2026",
+      "cta": "Vérifier mon Éligibilité",
+      "note": "Créez votre profil sur Admitta pour vérifier votre éligibilité. Frais de dossier exceptionnellement offerts pour notre Cohorte Inaugurale.",
+      "covers_tuition": "100% des Frais de Scolarité",
+      "covers_tuition_desc": "4 années couvertes intégralement",
+      "covers_internet": "Forfait Internet",
+      "covers_internet_desc": "Connectivité assurée pendant 4 ans",
+      "covers_slots": "10 Bourses",
+      "covers_slots_desc": "Places limitées — Cohorte inaugurale"
     },
     "why_choose": {
       "title": "Pourquoi Choisir Ignito Academy ?",
       "subtitle": "Une éducation de classe mondiale alliée à une accessibilité locale",
-      "benefit1_title": "Accrédité",
-      "benefit1_desc": "Reconnu par NCC Education et Ofqual pour des standards universitaires mondiaux.",
+      "benefit1_title": "Excellence Britannique",
+      "benefit1_desc": "Parcours structuré et aligné sur le cadre officiel RQF pour des standards universitaires d'excellence.",
       "benefit2_title": "100% à Distance",
       "benefit2_desc": "Étudiez de chez vous avec un soutien complet et des ressources en ligne.",
       "benefit3_title": "Horaire Flexible",
@@ -118,17 +119,14 @@
       "benefit4_title": "Soutien Local",
       "benefit4_desc": "Une équipe d'encadrement académique local dédiée, présente partout en RDC."
     },
-    "accreditation": {
-      "title": "Accrédité et Reconnu par"
-    },
     "final_cta": {
       "title": "Votre Licence Britannique Commence Ici",
       "subtitle": "Les inscriptions pour la cohorte de Septembre 2026 sont ouvertes. Soumettez votre dossier dès aujourd'hui et sécurisez votre place.",
       "cta": "Postuler Maintenant",
-      "note": "Prenez 2 minutes pour créer votre profil de candidat. Aucun paiement n'est requis à ce stade."
+      "note": "Frais de dossier exceptionnellement offerts pour notre Cohorte Inaugurale. Prenez 2 minutes pour créer votre profil."
     },
     "footer": {
-      "description": "Centre d'enseignement à distance accrédité par NCC Education et Ofqual, proposant des licences britanniques accréditées en RDC.",
+      "description": "Centre d'enseignement à distance proposant des parcours de licences britanniques alignés sur le cadre RQF, accessibles depuis la RDC.",
       "quick_links": "Liens Rapides",
       "admissions": "Admissions",
       "blog": "Blog",

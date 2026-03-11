@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     .from('applications')
     .select('applicant_id, ecole_provenance, option_academique')
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   // Academic history not yet filled → continue the onboarding flow
   if (!app?.ecole_provenance || !app?.option_academique) {

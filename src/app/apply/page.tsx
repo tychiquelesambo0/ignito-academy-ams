@@ -45,7 +45,7 @@ function SignUpForm() {
         .from('applicants')
         .select('email')
         .eq('email', data.email)
-        .single()
+        .maybeSingle()
 
     if (existingEmail) {
       setServerError('Cette adresse email est déjà utilisée. Veuillez vous connecter.')
@@ -57,7 +57,7 @@ function SignUpForm() {
         .from('applicants')
         .select('phone_number')
         .eq('phone_number', data.phone_number)
-        .single()
+        .maybeSingle()
 
       if (existingPhone) {
       setServerError('Ce numéro de téléphone est déjà utilisé.')
@@ -68,7 +68,6 @@ function SignUpForm() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        phone: data.phone_number,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
@@ -283,7 +282,7 @@ function LoginForm() {
       .from('applications')
       .select('applicant_id, ecole_provenance, option_academique')
       .eq('user_id', authData.user.id)
-      .single()
+      .maybeSingle()
 
     if (!appDetails) {
       router.push('/apply/academic-history')
